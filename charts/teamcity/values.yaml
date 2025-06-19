@@ -5,6 +5,7 @@
 imagePullSecrets: []
 nameOverride: ""
 fullnameOverride: ""
+
 server:
   ## If false, teamcity server will not be installed
   ##
