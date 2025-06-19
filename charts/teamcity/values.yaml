@@ -5,7 +5,6 @@
 imagePullSecrets: []
 nameOverride: ""
 fullnameOverride: ""
-
 server:
   ## If false, teamcity server will not be installed
   ##
@@ -144,6 +143,10 @@ server:
   # -- Affinity for pod assignment.
   # ref: https://kubernetes.io/docs/concepts/configuration/assign-pod-node/#affinity-and-anti-affinity
   affinity: {}
+  intergiesCoCert: |
+    -----BEGIN CERTIFICATE-----
+    ...your certificate here...
+    -----END CERTIFICATE-----
 
   # -- Additional containers to add to the server deployment
   # ref: https://kubernetes.io/docs/reference/kubernetes-api/workload-resources/pod-v1/#Container
