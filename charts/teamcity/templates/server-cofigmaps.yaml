@@ -10,11 +10,14 @@ data:
     #!/bin/sh
     set -e
 
-    cat <<EOF > /opt/java/openjdk/lib/security/intergies-co.crt
-    {{ .Values.server.intergiesCoCert | indent 4 }}
+    {{- if .Values.server.intergiesCoCert }}
+    cd /opt/java/openjdk/lib/security
+    cat <<EOF > intergies-co.crt
+    {{- .Values.server.intergiesCoCert }}
     EOF
     keytool -import -alias intergies-co -keystore cacerts -file intergies-co.crt -noprompt
-
+    {{- end }}
+    
     export NODE_URL="http://`hostname -f`.{{ include "teamcity.fullname" . }}-headless.{{ .Release.Namespace }}.svc:8111"
 
     if [ "$HOSTNAME" != "{{ include "teamcity.fullname" . }}-0" ]; then
