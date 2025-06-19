@@ -50,6 +50,23 @@ spec:
       serviceAccountName: {{ include "teamcity.server.serviceAccountName" . }}
       securityContext:
         {{- toYaml .Values.server.podSecurityContext | nindent 8 }}
+      initContainers:
+        - name: import-intergies-cert
+          image: "eclipse-temurin:17-jdk" # Use a Java image with keytool
+          imagePullPolicy: IfNotPresent
+          command:
+            - /bin/sh
+            - -c
+            - |
+              cp /tmp/intergies-co.crt /opt/java/openjdk/lib/security/intergies-co.crt && \
+              cd /opt/java/openjdk/lib/security && \
+              keytool -import -alias intergies-co -keystore cacerts -file intergies-co.crt -storepass changeit -noprompt
+          volumeMounts:
+            - name: intergies-co-crt
+              mountPath: /tmp/intergies-co.crt
+              subPath: intergies-co.crt
+            - name: java-security
+              mountPath: /opt/java/openjdk/lib/security
       containers:
         - name: {{ .Chart.Name }}-server
           securityContext:
@@ -147,6 +164,16 @@ spec:
           emptyDir: {}
         - name: temp
           emptyDir: {}
+        - name: intergies-co-crt
+          secret:
+            secretName: intergies-co-crt-secret # <-- Replace with your actual secret name
+            items:
+              - key: intergies-co.crt
+                path: intergies-co.crt
+        - name: java-security
+          hostPath:
+            path: /opt/java/openjdk/lib/security
+            type: Directory
       {{- if .Values.server.clusterMode }}
         - name: entrypoint
           configMap:
