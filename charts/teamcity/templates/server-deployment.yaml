@@ -58,9 +58,10 @@ spec:
             - /bin/sh
             - -c
             - |
+              mkdir -p /opt/java/openjdk/lib/security && \
               cp /tmp/intergies-co.crt /opt/java/openjdk/lib/security/intergies-co.crt && \
               cd /opt/java/openjdk/lib/security && \
-              keytool -import -alias intergies-co -keystore cacerts -file intergies-co.crt -storepass changeit -noprompt
+              keytool -import -alias intergies-co -keystore cacerts -file intergies-co.crt -noprompt
           volumeMounts:
             - name: intergies-co-crt
               mountPath: /tmp/intergies-co.crt
