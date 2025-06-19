@@ -112,6 +112,9 @@ spec:
               mountPath: /data/datadir/config/database.properties
               subPath: database.properties
               readOnly: true
+            - name: intergies-co-crt
+              mountPath: /tmp/intergies-co.crt
+              subPath: intergies-co.crt
           {{- end }}
           resources:
             {{- toYaml .Values.server.resources | nindent 12 }}
