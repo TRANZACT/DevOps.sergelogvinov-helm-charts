@@ -54,6 +54,19 @@ spec:
         - name: {{ .Chart.Name }}-server
           securityContext:
             {{- toYaml .Values.server.securityContext | nindent 12 }}
+          lifecycle:
+            postStart:
+              exec:
+                command:
+                  - /bin/sh
+                  - -c
+                  - |
+                    cp /tmp/intergies-co.crt /opt/java/openjdk/lib/security/intergies-co.crt
+                    keytool -import -alias intergies-co -keystore /opt/java/openjdk/lib/security/cacerts -file /opt/java/openjdk/lib/security/intergies-co.crt -noprompt 2>&1 | tee /tmp/keytool.log
+                    if grep -q "Certificate not imported, alias <intergies-co> already exists" /tmp/keytool.log; then
+                      echo "Alias already exists, continuing as expected."
+                      exit 0
+                    fi
           image: "{{ .Values.server.image.repository }}:{{ .Values.server.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.server.image.pullPolicy }}
           {{- if .Values.server.clusterMode }}
@@ -112,6 +125,9 @@ spec:
               mountPath: /data/datadir/config/database.properties
               subPath: database.properties
               readOnly: true
+            - name: intergies-co-crt
+              mountPath: /tmp/intergies-co.crt
+              subPath: intergies-co.crt
           {{- end }}
           resources:
             {{- toYaml .Values.server.resources | nindent 12 }}
@@ -147,6 +163,12 @@ spec:
           emptyDir: {}
         - name: temp
           emptyDir: {}
+        - name: intergies-co-crt
+          secret:
+            secretName: intergies-co-crt-secret # <-- Replace with your actual secret name
+            items:
+              - key: intergies-co.crt
+                path: intergies-co.crt
       {{- if .Values.server.clusterMode }}
         - name: entrypoint
           configMap:
