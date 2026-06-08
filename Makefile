@@ -39,5 +39,11 @@ test-%:
 
 docs: $(foreach pkg,$(PACKAGES),docs-$(pkg)) ## Update helm chart readme
 docs-%:
+	@echo Update $* CHANGELOG.md
+	@if [ -n "$$COMMIT_MESSAGE" ]; then \
+		echo "$$COMMIT_MESSAGE" > charts/$*/CHANGELOG.md; \
+	else \
+		git log --pretty=format:"- %s" -- charts/$*/ > charts/$*/CHANGELOG.md; \
+	fi
 	@echo Update $* README.md
 	@cd charts/$*; helm-docs --sort-values-order=file

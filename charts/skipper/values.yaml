@@ -14,6 +14,25 @@ imagePullSecrets: []
 nameOverride: ""
 fullnameOverride: ""
 
+# -- Environment variables
+env: []
+
+# -- Skipper arguments
+args: []
+  # - -enable-proxy-protocol
+  # - -proxy-allow-cidrs="::0/0,0.0.0.0/0"
+
+# -- Skipper config file body
+# refs: https://opensource.zalando.com/skipper/tutorials/basics/#yaml-configuration
+config:
+  default-filters-prepend: enableAccessLog(2,4,5)->flowId()->xforward()
+
+  # enable-kubernetes-external-names: true
+  # kubernetes-only-allowed-external-names: true
+  # kubernetes-allowed-external-names:
+  #   - ^one[.]example[.]org$
+  #   - ^two[.]example[.]org$
+
 serviceAccount:
   # Specifies whether a service account should be created
   create: true
@@ -25,8 +44,7 @@ serviceAccount:
 
 # -- Annotations for pod.
 # ref: https://kubernetes.io/docs/concepts/overview/working-with-objects/annotations/
-podAnnotations:
-  {}
+podAnnotations: {}
   # cluster-autoscaler.kubernetes.io/safe-to-evict: "false"
 
 # -- Extra labels for pod.
@@ -52,7 +70,12 @@ securityContext:
     drop:
       - ALL
 
+# -- Pod host network
+# Use it only for performance reason
 hostNetwork: false
+
+# -- Service node port
+# refs: https://kubernetes.io/docs/concepts/services-networking/service/#type-nodeport
 hostPort:
   enabled: false
   ports:
@@ -73,20 +96,46 @@ service:
   ipFamilies: [IPv4]
 
 resources:
-  # limits:
-  #   cpu: 100m
-  #   memory: 128Mi
+  limits:
+    cpu: 1
+    memory: 512Mi
   requests:
     cpu: 100m
     memory: 128Mi
 
-# -- Horizontal pod autoscaler.
+# -- Horizontal and Vertical pod autoscaler.
 # ref: https://kubernetes.io/docs/tasks/run-application/horizontal-pod-autoscale/
 autoscaling:
   enabled: false
+
   minReplicas: 1
   maxReplicas: 10
   targetCPUUtilizationPercentage: 80
+
+  # -- Resource to control
+  # Possible values are "cpu" and "memory"
+  controlledResources: ["cpu", "memory"]
+
+  # -- Controls which resource value should be autoscaled
+  # Possible values are "RequestsAndLimits" and "RequestsOnly"
+  controlledValues: RequestsOnly
+
+  # -- Max allowed resources for the pod
+  # default is resources.limits
+  maxAllowed: {}
+    # cpu: 1
+    # memory: 500Mi
+
+  # -- Min allowed resources for the pod
+  # default is resources.requests
+  minAllowed: {}
+    # cpu: 1
+    # memory: 500Mi
+
+  # -- Update policy
+  # Possible values are "Off", "Initial", "Recreate", "InPlaceOrRecreate" and "Auto"
+  updatePolicy:
+    updateMode: InPlaceOrRecreate
 
 # -- Use a daemonset instead of a deployment
 useDaemonSet: false

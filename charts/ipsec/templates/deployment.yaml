@@ -38,6 +38,9 @@ spec:
     spec:
       automountServiceAccountToken: false
       enableServiceLinks: false
+      {{- if .Values.priorityClassName }}
+      priorityClassName: {{ .Values.priorityClassName }}
+      {{- end }}
       {{- with .Values.imagePullSecrets }}
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
@@ -105,6 +108,7 @@ spec:
             runAsGroup: 99
           image: "{{ .Values.ipsecService.image.repository }}:{{ .Values.ipsecService.image.tag }}"
           imagePullPolicy: {{ .Values.ipsecService.image.pullPolicy }}
+          args: ["-f", "/usr/local/etc/haproxy/haproxy.cfg"]
           ports:
             - name: metrics
               containerPort: 8404

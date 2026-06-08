@@ -209,15 +209,6 @@ rules:
   - list
   - watch
 - apiGroups:
-  - autoscaling
-  resources:
-  - horizontalpodautoscalers
-  - horizontalpodautoscalers/status
-  verbs:
-  - get
-  - list
-  - watch
-- apiGroups:
   - batch
   resources:
   - cronjobs
@@ -322,10 +313,31 @@ rules:
   verbs:
   - get
   - list
+  - watch
+- apiGroups:
+  - autoscaling
+  resources:
+  - horizontalpodautoscalers
+  - horizontalpodautoscalers/status
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - autoscaling.k8s.io
+  resources:
+  - verticalpodautoscalers
+  - verticalpodautoscalers/status
+  verbs:
+  - get
+  - list
+  - watch
 #### Custom resources
 - apiGroups:
+  - notification.toolkit.fluxcd.io
   - source.toolkit.fluxcd.io
   - helm.toolkit.fluxcd.io
+  - image.toolkit.fluxcd.io
   - kustomize.toolkit.fluxcd.io
   resources:
   - '*'
@@ -357,6 +369,24 @@ rules:
   verbs:
   - get
   - list
+#### Karpenter
+- apiGroups:
+  - karpenter.sh
+  resources:
+  - nodepools
+  - nodeclaims
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - karpenter.proxmox.sinextra.dev
+  resources:
+  - '*'
+  verbs:
+  - get
+  - list
+  - watch
 ####
 - apiGroups:
   - cert-manager.io
@@ -392,6 +422,16 @@ rules:
 - apiGroups:
   - external-secrets.io
   resources:
+  - secretstores
+  - clustersecretstores
+  - pushsecrets
+  - clusterpushsecrets
+  verbs:
+  - list
+  - watch
+- apiGroups:
+  - external-secrets.io
+  resources:
   - externalsecrets
   verbs:
   - get
@@ -403,24 +443,33 @@ rules:
 - apiGroups:
   - operator.victoriametrics.com
   resources:
+  - vmclusters
+  - vmclusters/status
+  - vmagents
+  - vmagents/status
+  - vmalerts
+  - vmalerts/status
+  - vmprobes
+  - vmprobes/status
   - vmrules
-  - vmrules/finalizers
+  - vmrules/status
+  - vmsingle
+  - vmsingle/status
   verbs:
   - get
   - list
   - watch
+- apiGroups:
+  - operator.victoriametrics.com
+  resources:
+  - vmalerts
+  - vmprobes
+  - vmrules
+  verbs:
   - create
   - delete
   - patch
   - update
-- apiGroups:
-  - operator.victoriametrics.com
-  resources:
-  - vmrules/status
-  verbs:
-  - get
-  - list
-  - watch
 #### Percona Server for MongoDB
 - apiGroups:
   - psmdb.percona.com
@@ -440,6 +489,86 @@ rules:
   verbs:
   - create
   - delete
+#### Cloudnative-PG
+- apiGroups:
+  - postgresql.cnpg.io
+  resources:
+  - clusters
+  - poolers
+  - databases
+  - backups
+  - scheduledbackups
+  verbs:
+  - get
+  - list
+  - watch
+  - patch
+  - update
+  - create
+  - delete
+- apiGroups:
+  - postgresql.cnpg.io
+  resources:
+  - clusters/status
+  - poolers/status
+  - databases/status
+  - backups/status
+  - scheduledbackups/status
+  verbs:
+  - get
+- apiGroups:
+  - cnpg-extensions.yandex.cloud
+  resources:
+  - '*'
+  verbs:
+  - get
+  - list
+  - watch
+  - patch
+  - update
+  - create
+  - delete
+#### Clickhouse altinity
+- apiGroups:
+  - clickhouse.altinity.com
+  - clickhouse-keeper.altinity.com
+  resources:
+  - clickhouseinstallations
+  - clickhouseinstallationtemplates
+  - clickhousekeeperinstallations
+  verbs:
+  - get
+  - list
+  - watch
+  - patch
+  - update
+  - create
+  - delete
+- apiGroups:
+  - zookeeper.pravega.io
+  resources:
+  - zookeeperclusters
+  verbs:
+  - get
+  - list
+  - watch
+  - patch
+  - update
+  - create
+  - delete
+#### OpenSearch
+- apiGroups:
+  - opensearch.org
+  resources:
+  - opensearchclusters
+  verbs:
+  - get
+  - list
+  - watch
+  - patch
+  - update
+  - create
+  - delete
 #### Keda
 - apiGroups:
   - keda.sh
@@ -450,6 +579,8 @@ rules:
   - get
   - list
   - watch
+  - patch
+  - update
 - apiGroups:
   - keda.sh
   resources:

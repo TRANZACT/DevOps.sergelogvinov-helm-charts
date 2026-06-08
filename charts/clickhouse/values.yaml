@@ -14,6 +14,14 @@ imagePullSecrets: []
 nameOverride: ""
 fullnameOverride: ""
 
+# -- Installation type
+# can be "altinity" or "standalone"
+installationType: "standalone"
+
+# -- Cluster domain
+# refs: https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/
+clusterDomain: cluster.local
+
 # -- Pods Service Account.
 # ref: https://kubernetes.io/docs/tasks/configure-pod-container/configure-service-account/
 serviceAccount:
@@ -25,19 +33,22 @@ serviceAccount:
   # If not set and create is true, a name is generated using the fullname template
   name: ""
 
+# -- Extra labels for pod.
+# ref: https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/
 podlabels: {}
 
 # -- Annotations for pod.
 # ref: https://kubernetes.io/docs/concepts/overview/working-with-objects/annotations/
 podAnnotations: {}
+  # cluster-autoscaler.kubernetes.io/safe-to-evict: "false"
 
 # -- Pod Security Context.
 # ref: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/#set-the-security-context-for-a-pod
 podSecurityContext:
   runAsNonRoot: true
-  runAsUser: 999
-  runAsGroup: 999
-  fsGroup: 999
+  runAsUser: 101
+  runAsGroup: 101
+  fsGroup: 101
   fsGroupChangePolicy: "OnRootMismatch"
 
 # -- Container Security Context.
@@ -49,11 +60,10 @@ securityContext:
   capabilities:
     drop:
       - ALL
-    add:
-      []
-      # Need PodSecurity policy to `pod-security.kubernetes.io/enforce: privileged`
-      # - SYS_NICE
-      # - IPC_LOCK
+    # add:
+    #   # Need PodSecurity policy to `pod-security.kubernetes.io/enforce: privileged`
+    #   - SYS_NICE
+    #   - IPC_LOCK
   # readOnlyRootFilesystem: true
 
 # -- Service parameters
@@ -68,8 +78,7 @@ service:
 ingress:
   enabled: false
   className: ""
-  annotations:
-    {}
+  annotations: {}
     # nginx.ingress.kubernetes.io/rewrite-target: "/$1"
   hosts:
     - host: chart-example.local
@@ -78,6 +87,35 @@ ingress:
   #  - secretName: chart-example-tls
   #    hosts:
   #      - chart-example.local
+
+# -- Vertical pod autoscaler
+autoscaling:
+  enabled: false
+
+  # -- Resource to control
+  # Possible values are "cpu" and "memory"
+  controlledResources: ["cpu", "memory"]
+
+  # -- Controls which resource value should be autoscaled
+  # Possible values are "RequestsAndLimits" and "RequestsOnly"
+  controlledValues: RequestsOnly
+
+  # -- Max allowed resources for the pod
+  # default is resources.limits
+  maxAllowed: {}
+    # cpu: 1
+    # memory: 500Mi
+
+  # -- Min allowed resources for the pod
+  # default is resources.requests
+  minAllowed: {}
+    # cpu: 1
+    # memory: 500Mi
+
+  # -- Update policy
+  # Possible values are "Off", "Initial", "Recreate", "InPlaceOrRecreate" and "Auto"
+  updatePolicy:
+    updateMode: InPlaceOrRecreate
 
 # -- Resource requests and limits.
 # ref: https://kubernetes.io/docs/user-guide/compute-resources/
@@ -89,11 +127,33 @@ resources:
     cpu: 500m
     memory: 512Mi
 
+# -- Additional volume mounts.
+extraVolumes: []
+  # - name: bucket-certs
+  #   secret:
+  #     defaultMode: 420
+  #     secretName: backup-gcp
+
+# -- Additional volumes.
+extraVolumeMounts: []
+  # - name: bucket-certs
+  #   mountPath: /etc/gcp
+  #   readOnly: true
+
+# -- Additional init containers.
+extraInitContainers: {}
+  # - name: container-name
+  # - image: ...
+# -- Additional containers.
+extraContainers: {}
+  # - name: container-name
+  # - image: ...
+
 # -- Persistence parameters
 # ref: https://kubernetes.io/docs/user-guide/persistent-volumes/
 persistence:
   enabled: true
-  storageClass: local-path
+  # storageClass: "-"
   accessModes:
     - ReadWriteOnce
   size: 64Gi
@@ -120,8 +180,54 @@ tolerations: []
 # ref: https://kubernetes.io/docs/concepts/configuration/assign-pod-node/#affinity-and-anti-affinity
 affinity: {}
 
-metrics:
+clickhouseKeeper:
   enabled: false
+
+  replicaCount: 3
+
+  image:
+    repository: clickhouse/clickhouse-keeper
+    pullPolicy: IfNotPresent
+    tag: 26.5.1-alpine
+
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
+
+  # -- Persistence parameters
+  # ref: https://kubernetes.io/docs/user-guide/persistent-volumes/
+  persistence:
+    enabled: true
+    # storageClass: "-"
+    accessModes:
+      - ReadWriteOnce
+    size: 5Gi
+    annotations: {}
+
+  # -- Priority Class Name
+  # ref: https://kubernetes.io/docs/concepts/configuration/pod-priority-preemption/#priorityclass
+  priorityClassName: ~
+
+  # -- Node labels for pod assignment.
+  # ref: https://kubernetes.io/docs/user-guide/node-selection/
+  nodeSelector: {}
+
+  # -- Tolerations for pod assignment.
+  # ref: https://kubernetes.io/docs/concepts/configuration/taint-and-toleration/
+  tolerations: []
+
+  # -- Pod Anti Affinity
+  # soft/hard
+  podAntiAffinityPreset: hard
+  podAntiAffinityPresetKey: kubernetes.io/hostname
+
+  # -- Affinity for pod assignment.
+  # ref: https://kubernetes.io/docs/concepts/configuration/assign-pod-node/#affinity-and-anti-affinity
+  affinity: {}
 
 backup:
   enabled: false
@@ -129,24 +235,28 @@ backup:
   image:
     repository: altinity/clickhouse-backup
     pullPolicy: IfNotPresent
-    tag: "2.6.23"
+    tag: "2.7.1"
 
   # set value "" to disable cron backup
+  #           ┌───────────── minute (0 - 59)
+  #           │ ┌───────────── hour (0 - 23)
+  #           │ │ ┌───────────── day of the month (1 - 31)
+  #           │ │ │ ┌───────────── month (1 - 12)
+  #           │ │ │ │ ┌───────────── day of the week (0 - 6)
+  #           │ │ │ │ │
+  #           * * * * *
   schedule: "15 4 * * *"
 
-  args:
-    []
+  args: []
     # - create_remote
     # - --schema
 
-  envs:
-    {}
+  envs: {}
     # BACKUPS_TO_KEEP_REMOTE: "10"
     # LOG_LEVEL: info
     # REMOTE_STORAGE: sftp
 
-  config:
-    {}
+  config: {}
     # sftp:
     #   address: ""                  # SFTP_ADDRESS
     #   username: ""                 # SFTP_USERNAME
@@ -163,7 +273,7 @@ backup:
   # ref: https://kubernetes.io/docs/user-guide/compute-resources/
   resources:
     limits:
-      cpu: 1200m
+      cpu: 4
       memory: 512Mi
     requests:
       cpu: 500m
@@ -173,8 +283,57 @@ backup:
   # ref: https://kubernetes.io/docs/concepts/configuration/pod-priority-preemption/#priorityclass
   priorityClassName: ~
 
-cronjobs:
-  {}
+backupCheck:
+  enabled: false
+
+  #           ┌───────────── minute (0 - 59)
+  #           │ ┌───────────── hour (0 - 23)
+  #           │ │ ┌───────────── day of the month (1 - 31)
+  #           │ │ │ ┌───────────── month (1 - 12)
+  #           │ │ │ │ ┌───────────── day of the week (0 - 6)
+  #           │ │ │ │ │
+  #           * * * * *
+  schedule: "15 8 * * *"
+
+  envs: {}
+    # LOG_LEVEL: info
+    # REMOTE_STORAGE: sftp
+
+  # -- Resource requests and limits.
+  # ref: https://kubernetes.io/docs/user-guide/compute-resources/
+  resources:
+    limits:
+      cpu: 1
+      memory: 4Gi
+    requests:
+      cpu: 100m
+      memory: 512Mi
+
+  # -- Persistence parameters
+  # ref: https://kubernetes.io/docs/user-guide/persistent-volumes/
+  persistence:
+    ## A manually managed Persistent Volume and Claim
+    # existingClaim:
+    #
+    # storageClass: "-"
+    accessModes:
+      - ReadWriteOnce
+    size: 8Gi
+    annotations: {}
+
+  # -- Node labels for pod assignment.
+  # ref: https://kubernetes.io/docs/user-guide/node-selection/
+  nodeSelector: {}
+
+  # -- Tolerations for pod assignment.
+  # ref: https://kubernetes.io/docs/concepts/configuration/taint-and-toleration/
+  tolerations: []
+
+  # -- Affinity for pod assignment.
+  # ref: https://kubernetes.io/docs/concepts/configuration/assign-pod-node/#affinity-and-anti-affinity
+  affinity: {}
+
+cronjobs: {}
   # backup:
   #   schedule: "0 0 * * *"
   #   command: |
@@ -194,16 +353,14 @@ cronjobs:
 tlsCerts:
   create: false
 
+metrics:
+  enabled: false
+
 #
 # clickhouse specific
 #
 
-files: {}
-
-config: ~
-
-storage:
-  {}
+storage: {}
   # disks:
   #   storage_s3:
   #     type: s3
@@ -222,6 +379,10 @@ storage:
   #     prefer_not_to_merge: true
 
 clickhouse:
+  # -- Clickhouse cluster name
+  # Use helm-chart name if empty
+  name: ""
+
   # -- Clickhouse log level
   # ref: https://clickhouse.com/docs/en/operations/server-configuration-parameters/settings#logger
   # trace, debug, information, warning, error
@@ -237,32 +398,54 @@ clickhouse:
       profile: default
       quota: default
       password: 2686af9f25e1a64f5e9f7290c7e457aa06b616fb31d2b4331ff6fa0857661cd5 # echo -n "logger" | shasum -a 256
+      # or
+      # password:
+      #   secretKeyRef: { name: clickhouse_secret, key: logger }
+
     # -- Clickhouse read only user
     - name: reader
       profile: reader
       quota: default
       accessManagement: false # disable access management for this user (default: true)
       password: 3d0941964aa3ebdcb00ccef58b1bb399f9f898465e9886d5aec7f31090a0fb30 # echo -n "reader" | shasum -a 256
+      # or
+      # password:
+      #   secretKeyRef: { name: clickhouse_secret, key: reader }
+
+  zookeeper: {}
+    # nodes: []
+    # root: ~
+    # identity: user:password
 
   # -- Clickhouse named collections
-  collections:
-    []
+  collections: []
     # - name: postgres
     #   host: 127.0.0.1
     #   username: user
     #   password: pwd
     #   database: db
     #   schema: public
-  envs:
-    {}
+
+  envs: {}
     # AWS_REGION: eu-central-1
     # AWS_ACCESS_KEY_ID: XXXX
     # AWS_SECRET_ACCESS_KEY: YYYY
 
-  customConfig:
-    {}
+  # -- Clickhouse environment variable references that will be added
+  envValueFrom: {}
+    # AWS_ACCESS_KEY_ID:
+    #   secretKeyRef:
+    #     name: aws-creds
+    #     key: access-key-id
+
+  customConfig: {}
     # background_fetches_pool_size.xml: |-
     #   <?xml version="1.0"?>
     #   <clickhouse>
     #     <background_fetches_pool_size>32</background_fetches_pool_size>
     #   </clickhouse>
+
+  # -- Clickhouse initdb scripts
+  initDB: {}
+    # test.sql: |-
+    #   CREATE TABLE test;

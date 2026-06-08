@@ -18,7 +18,7 @@ spec:
   secretName: {{ include "openvpn.fullname" . }}-ca
   secretTemplate:
     labels:
-      {{- include "openvpn.labels" . | nindent 6 }}
+      {{- include "openvpn.selectorLabels" . | nindent 6 }}
   issuerRef:
     name: {{ include "openvpn.fullname" . }}
     kind: Issuer
@@ -27,9 +27,10 @@ spec:
     {{- toYaml . | nindent 4 }}
   {{- end }}
   commonName: {{ default (include "openvpn.fullname" .) .Values.certManager.commonName }}
-  duration: 26280h # 3y
-  renewBefore: 26000h # ~3y
+  duration: 87600h # 10y
+  renewBefore: 2160h # 3m
   privateKey:
+    rotationPolicy: Always
     algorithm: ECDSA
     size: 256
   usages:
@@ -58,10 +59,11 @@ spec:
   secretName: {{ include "openvpn.fullname" . }}
   secretTemplate:
     labels:
-      {{- include "openvpn.labels" . | nindent 6 }}
+      {{- include "openvpn.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: server
   commonName: {{ default (include "openvpn.fullname" .) .Values.openvpn.hostName }}
   duration: 26280h # 3y
-  renewBefore: 26000h # ~3y
+  renewBefore: 2160h # 3m
   privateKey:
     rotationPolicy: Always
     algorithm: ECDSA
@@ -87,7 +89,8 @@ spec:
   secretName: {{ include "openvpn.fullname" $ }}-client-{{ $client }}
   secretTemplate:
     labels:
-      {{- include "openvpn.labels" $ | nindent 6 }}
+      {{- include "openvpn.selectorLabels" $ | nindent 6 }}
+      app.kubernetes.io/component: client
   commonName: {{ $k | trunc 63 | replace "@" "." }}
   duration: 8760h # 12m
   renewBefore: 2190h # 3m
@@ -115,7 +118,8 @@ spec:
   secretName: {{ include "openvpn.fullname" . }}-client
   secretTemplate:
     labels:
-      {{- include "openvpn.labels" . | nindent 6 }}
+      {{- include "openvpn.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: client
   commonName: client
   duration: 17520h # 24m
   renewBefore: 2190h # 3m

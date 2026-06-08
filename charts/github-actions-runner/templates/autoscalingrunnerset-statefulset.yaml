@@ -1,4 +1,4 @@
-{{- if not (.Capabilities.APIVersions.Has "actions.github.com/v1alpha1") }}
+{{- if eq .Values.installationType "statefulset" }}
 {{ $sidecar := semverCompare ">=1.29-0" .Capabilities.KubeVersion.GitVersion }}
 apiVersion: apps/v1
 kind: StatefulSet
@@ -11,7 +11,7 @@ metadata:
 spec:
   serviceName: {{ include "github-actions-runner.fullname" . }}
   {{- if not .Values.autoscaling.enabled }}
-  replicas: {{ max 1 .Values.minRunners }}
+  replicas: {{ max 1 .Values.autoscaling.minReplicas | int }}
   {{- end }}
   updateStrategy:
     type: RollingUpdate

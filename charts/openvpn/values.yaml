@@ -56,6 +56,13 @@ openvpn:
   # -- Server domain name.
   hostName: vpn.example.com
 
+  # -- Device type, tun or tap
+  # Prefer to use tun interface.
+  devtype: tun
+
+  # -- Device MTU size
+  devmtu: 1400
+
   # -- OpenVPN configuration file.
   config:
     ~
@@ -122,6 +129,7 @@ openvpn:
   tlsversion:
     {}
     # tls-version-min: 1.2
+    ## openvpn --show-tls
     # tls-cipher: TLS-ECDHE-ECDSA-WITH-AES-128-GCM-SHA256
 
   # -- TLS authentication.
@@ -188,6 +196,11 @@ service:
     #   port: 5432
     #   backend: postgres.default.svc.cluster.local:5432
     #   tls: true
+
+  image:
+    repository: ghcr.io/sergelogvinov/haproxy
+    pullPolicy: IfNotPresent
+    tag: 3.3.10-alpine3.23
 
 # -- Resource requests and limits.
 # ref: https://kubernetes.io/docs/user-guide/compute-resources/

@@ -1,12 +1,13 @@
+{{- if eq .Values.installationType "standalone" }}
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
   name: {{ include "clickhouse.fullname" . }}
   labels:
     {{- include "clickhouse.labels" . | nindent 4 }}
-    {{- with .Values.podlabels }}
-    {{ toYaml . | nindent 4 }}
-    {{- end }}
+  {{- with .Values.podlabels }}
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
 spec:
   serviceName: {{ include "clickhouse.fullname" . }}-headless
   replicas: {{ .Values.replicaCount }}
@@ -26,6 +27,7 @@ spec:
         prometheus.io/scrape: "true"
         prometheus.io/port: "9363"
       {{- end}}
+        checksum/envs: {{ toJson .Values.clickhouse.envs | sha256sum }}
       labels:
         {{- include "clickhouse.selectorLabels" . | nindent 8 }}
         app.kubernetes.io/component: server
@@ -44,6 +46,10 @@ spec:
       serviceAccountName: {{ include "clickhouse.serviceAccountName" . }}
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      {{- with .Values.extraInitContainers }}
+      initContainers:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
       containers:
         - name: {{ .Chart.Name }}
           securityContext:
@@ -59,6 +65,29 @@ spec:
           env:
             - name: HOME
               value: /tmp
+            {{- range $key, $value := .Values.clickhouse.envValueFrom }}
+            - name: {{ $key | quote }}
+              valueFrom:
+                {{- tpl (toYaml $value) $ | nindent 16 }}
+            {{- end }}
+            {{- range $u := .Values.clickhouse.users }}
+
+            {{- if and (hasKey $u "password_plain") (kindIs "map" $u.password_plain) $u.password_plain.secretKeyRef }}
+            - name: {{ include "clickhouse.envVarName" (dict "user" $u.name "field" "PASSWORD_PLAIN") }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $u.password_plain.secretKeyRef.name | quote }}
+                  key: {{ $u.password_plain.secretKeyRef.key | quote }}
+              {{- end }}
+
+            {{- if and (hasKey $u "password") (kindIs "map" $u.password) $u.password.secretKeyRef }}
+            - name: {{ include "clickhouse.envVarName" (dict "user" $u.name "field" "PASSWORD_SHA256_HEX") }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $u.password.secretKeyRef.name | quote }}
+                  key: {{ $u.password.secretKeyRef.key | quote }}
+              {{- end }}
+            {{- end }}
           ports:
             - name: http
               containerPort: 8123
@@ -107,12 +136,19 @@ spec:
               mountPath: /var/log/clickhouse
             - name: data
               mountPath: /var/lib/clickhouse
+            {{- if .Values.clickhouse.initDB }}
+            - name: initdb
+              mountPath: /docker-entrypoint-initdb.d
+            {{- end }}
           {{- if .Values.tlsCerts.create }}
             - name: tlscerts
               mountPath: /etc/ssl/tlscerts
           {{- end }}
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
+      {{- with .Values.extraContainers }}
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
@@ -144,6 +180,10 @@ spec:
             items:
               - key: config.xml
                 path: config.xml
+              - key: logger.xml
+                path: logger.xml
+              - key: optimization.xml
+                path: optimization.xml
               - key: collections.xml
                 path: collections.xml
               - key: storage.xml
@@ -158,6 +198,11 @@ spec:
             {{- end }}
         - name: logs
           emptyDir: {}
+        {{- if .Values.clickhouse.initDB }}
+        - name: initdb
+          configMap:
+            name: {{ include "clickhouse.fullname" . }}-initdb
+        {{- end }}
       {{- if .Values.tlsCerts.create }}
         - name: tlscerts
           secret:
@@ -196,4 +241,5 @@ spec:
         storageClassName: "{{ .Values.persistence.storageClass }}"
       {{- end }}
       {{- end }}
+{{- end -}}
 {{- end -}}

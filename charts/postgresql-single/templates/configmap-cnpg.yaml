@@ -1,0 +1,87 @@
+{{- if eq .Values.installationType "cnpg" }}
+{{- if or .Values.backup.enabled .Values.backup.recovery }}
+apiVersion: cnpg-extensions.yandex.cloud/v1beta1
+kind: BackupConfig
+metadata:
+  name: {{ include "postgresql-single.fullname" . }}
+  labels:
+    {{- include "postgresql-single.labels" . | nindent 4 }}
+spec:
+  resources:
+  {{- with .Values.backup.resources.limits }}
+    limits:
+      {{- toYaml . | nindent 6 }}
+  {{- end }}
+    requests:
+      cpu: 100m
+      memory: 32Mi
+  downloadConcurrency: {{ default 16 (get .Values.backup.walg "WALG_DOWNLOAD_CONCURRENCY") }}
+  uploadConcurrency: {{ default 8 (get .Values.backup.walg "WALG_UPLOAD_CONCURRENCY") }}
+  uploadDiskConcurrency: {{ default 16 (get .Values.backup.walg "WALG_UPLOAD_DISK_CONCURRENCY") }}
+  uploadDiskRateLimitBytesPerSecond: {{ default 1073741824 (get .Values.backup.walg "WALG_DISK_RATE_LIMIT") }} # 1GB/s
+  uploadNetworkRateLimitBytesPerSecond: {{ default 536870912 (get .Values.backup.walg "WALG_NETWORK_RATE_LIMIT") }} # 512MB/s
+  deltaMaxSteps: {{ default 1 (get .Values.backup.walg "WALG_DELTA_MAX_STEPS") }}
+  tarDisableFsync: {{ default true (get .Values.backup.walg "WALG_TAR_DISABLE_FSYNC") }}
+  tarSizeThreshold: {{ default 68719476736 (get .Values.backup.walg "WALG_TAR_SIZE_THRESHOLD") | int }} # 64GB
+  retention:
+    ignoreForBackupConfigDeletion: true
+    ignoreForManualBackups: true
+    minBackupsToKeep: 7
+    deleteBackupsAfter: 14d
+  storage:
+    type: s3
+    s3:
+      {{- if .Values.backup.walgSecrets }}
+      {{- if not (get .Values.backup.walg "WALG_S3_PREFIX") }}
+      prefixFrom:
+        secretKeyRef:
+          name: {{ .Values.backup.walgSecrets }}
+          key: prefix
+      {{- else }}
+      prefix: {{ get .Values.backup.walg "WALG_S3_PREFIX" }}
+      {{- end }}
+      {{- if not (get .Values.backup.walg "AWS_REGION") }}
+      regionFrom:
+        secretKeyRef:
+          name: {{ .Values.backup.walgSecrets }}
+          key: region
+      {{- else }}
+      region: {{ get .Values.backup.walg "AWS_REGION" }}
+      {{- end }}
+      {{- if not (get .Values.backup.walg "AWS_ENDPOINT") }}
+      endpointUrlFrom:
+        secretKeyRef:
+          name: {{ .Values.backup.walgSecrets }}
+          key: endpointUrl
+      {{- else }}
+      endpointUrl: {{ get .Values.backup.walg "AWS_ENDPOINT" }}
+      {{- end }}
+      {{- else }}
+      prefix: {{ get .Values.backup.walg "WALG_S3_PREFIX" }}
+      {{- if hasKey .Values.backup.walg "AWS_REGION" }}
+      region: {{ get .Values.backup.walg "AWS_REGION" }}
+      {{- end }}
+      {{- if hasKey .Values.backup.walg "AWS_ENDPOINT" }}
+      endpointUrl: {{ get .Values.backup.walg "AWS_ENDPOINT" }}
+      {{- end }}
+      {{- end }}
+      {{- if hasKey .Values.backup.walg "WALG_S3_STORAGE_CLASS" }}
+      storageClass: {{ get .Values.backup.walg "WALG_S3_STORAGE_CLASS" }}
+      {{- end }}
+      accessKeyId:
+        name: {{ include "postgresql-single.fullname" . }}
+        key: accessKey
+      accessKeySecret:
+        name: {{ include "postgresql-single.fullname" . }}
+        key: secretKey
+      {{- if hasKey .Values.backup.walg "AWS_S3_FORCE_PATH_STYLE" }}
+      forcePathStyle: {{ eq (get .Values.backup.walg "AWS_S3_FORCE_PATH_STYLE") "true" }}
+      {{- end }}
+  {{- if or (hasKey .Values.backup.walg "WALG_LIBSODIUM_KEY")
+            (hasKey .Values.backup.walg "WALG_LIBSODIUM_KEY_PATH") }}
+  encryption:
+    method: libsodium
+    encryptionSecret: {{ include "postgresql-single.fullname" . }}
+  {{- end }}
+{{- end }}
+{{- end }}

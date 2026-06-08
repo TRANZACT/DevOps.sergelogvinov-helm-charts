@@ -8,37 +8,30 @@ data:
   postgresql.conf: |
     {{- include "postgresql-single.postgresqlConfiguration" . | nindent 4 }}
     {{- include "postgresql-single.postgresqlConfigurationLogs" . | nindent 4 }}
-
-  {{- if gt (int .Values.postgresqlServerMemory) (int "511") }}
+    {{- include "postgresql-single.postgresqlConfigurationReplication" . | nindent 4 }}
 
     # auto generated, see https://pgconfigurator.cybertec.at
-    work_mem = {{ div .Values.postgresqlServerMemory 32 }}MB
-    maintenance_work_mem = {{ div .Values.postgresqlServerMemory 4 }}MB
-    effective_cache_size = {{ div .Values.postgresqlServerMemory 2 }}MB
-    effective_io_concurrency = 100
-    random_page_cost = 1.25
-    {{- if and .Values.resources.requests (hasKey .Values.resources.requests "hugepages-1Gi") }}
-    {{- $pages := int (regexFind "[0-9]+" (get .Values.resources.requests "hugepages-1Gi")) }}
-    shared_buffers = {{ sub $pages 1 }}GB
-    huge_pages = try
-    {{- else if and .Values.resources.requests (hasKey .Values.resources.requests "hugepages-2Mi") }}
-    {{- $pages := int (include "resource-megabytes" (get .Values.resources.requests "hugepages-2Mi")) }}
-    shared_buffers = {{ sub $pages 800 }}MB
-    huge_pages = try
-    {{- else }}
-    shared_buffers = {{ div .Values.postgresqlServerMemory 4 }}MB
-    huge_pages = off
+    {{- range $key, $value := mergeOverwrite (include "postgresql-single.postgresqlConfigurationCnpg" . | fromYaml) (include "postgresql-single.postgresqlConfigurationExtra" . | fromYaml) }}
+    {{ $key }} = '{{ $value }}'
     {{- end }}
-  {{- end }}
-
-  {{- if .Values.postgresqlConfigurationExtra }}
-    {{- .Values.postgresqlConfigurationExtra | nindent 4 }}
-  {{- end }}
 
     include_if_exists '{{ .Values.persistence.mountPath }}/postgresql-local.conf'
 
   pg_hba.conf: |
-    {{- .Values.pgHbaConfiguration | nindent 4 }}
+    # host  database    user                  address       auth-method
+    #
+    local   all         all                                 trust
+    local   replication postgres                            trust
+    host    all         all                   localhost     md5
+    hostssl all         postgres              10.0.0.0/8    md5
+    hostssl postgres    replication           10.0.0.0/8    md5
+    hostssl replication postgres              10.0.0.0/8    md5
+    hostssl replication replication           10.0.0.0/8    md5
+    hostssl all         replication           10.0.0.0/8    md5
+    #
+    {{- with .Values.pgHbaConfiguration }}{{- range . }}
+    {{- . | toString | nindent 4 }}
+    {{- end }}{{- end }}
 
   rsyncd.conf: |
     port = 1873
@@ -52,6 +45,7 @@ data:
     read only = true
     timeout = 300
 
+  {{ if .Values.metrics.enabled -}}
   metrics.yaml: |
     auth_modules:
       localhost:
@@ -66,10 +60,13 @@ data:
 
   metrics.sql: |
     CREATE EXTENSION pg_stat_statements;
+  {{- end }}
 
-  {{ if .Values.initdb.script }}
-  initdb.sh: |
-    {{- .Values.initdb.script | nindent 4 }}
+  {{ with .Values.initdb.script -}}
+  initdb.sql: |
+    {{- range . }}
+    {{- . | toString | nindent 4 }}
+    {{- end }}
   {{- end }}
 
   migrate.sh: |
@@ -165,17 +162,32 @@ data:
     #!/bin/sh -e
     set -e
 
-    [ -z "$WALG_BACKUP_VERSION" ] && export WALG_BACKUP_VERSION=LATEST
-
-    echo "*** Star recovery from wal-g backup ($WALG_BACKUP_VERSION)"
     start=`date +%s`
     pg_ctl -D "$PGDATA" -m fast -w stop >/dev/null 2>/dev/null ||:
 
     rm -rf {{ .Values.persistence.mountPath }}/data
 
+    {{- if and (eq .Values.backup.recoveryMethod "basebackup") .Values.postgresqlConninfo }}
+    {{- $connection := include "postgresql-single.postgresqlConninfoDict" . | fromYaml }}
+    echo "*** Start recovery from basebackup ({{ $connection.host }})"
+
+    export PGPASSWORD={{ $connection.password }}
+    unset PGSSLCERT
+    unset PGSSLKEY
+    unset PGSSLROOTCERT
+    pg_basebackup -h {{ $connection.host }} -U {{ default .Values.postgresqlUsername $connection.user }} -D {{ .Values.persistence.mountPath }}/data
+    {{- else }}
+    [ -z "$WALG_BACKUP_VERSION" ] && export WALG_BACKUP_VERSION=LATEST
+
+    echo "*** Start recovery from wal-g backup ($WALG_BACKUP_VERSION)"
+
     touch {{ .Values.persistence.mountPath }}/postgresql-local.conf
     mkdir -p {{ .Values.persistence.mountPath }}/data
     /usr/bin/wal-g --config /etc/walg/walg.yaml backup-fetch {{ .Values.persistence.mountPath }}/data $WALG_BACKUP_VERSION
+    {{- end }}
+
+    rm -f {{ .Values.persistence.mountPath }}/data/custom.conf {{ .Values.persistence.mountPath }}/data/override.conf
+    chmod u+rw $PGDATA/postgresql.auto.conf
 
     echo "# bootstrap addons" > $PGDATA/postgresql.auto.conf
 
@@ -244,6 +256,10 @@ data:
 
     export VERSION=LATEST
 
+    /usr/bin/wal-g --config /etc/walg/walg.yaml backup-list --pretty --detail
+    /usr/bin/wal-g --config /etc/walg/walg.yaml wal-show ||:
+
+    echo
     echo "*** Start recovery from wal-g backup ($VERSION)"
     START=`date +%s`
 
@@ -254,6 +270,9 @@ data:
     touch {{ .Values.persistence.mountPath }}/postgresql-local.conf
     mkdir -p {{ .Values.persistence.mountPath }}/data
     /usr/bin/wal-g --config /etc/walg/walg.yaml backup-fetch {{ .Values.persistence.mountPath }}/data $VERSION
+
+    rm -f {{ .Values.persistence.mountPath }}/data/custom.conf {{ .Values.persistence.mountPath }}/data/override.conf
+    chmod u+rw $PGDATA/postgresql.auto.conf
 
     echo "# bootstrap addons" > $PGDATA/postgresql.auto.conf
     echo "archive_command = '/bin/true'"                                                   >> $PGDATA/postgresql.auto.conf
@@ -279,7 +298,16 @@ data:
     echo "*** Recovery time - ${RUNTIME}s"
 
     echo "*** Size: `du -hs {{ .Values.persistence.mountPath }}/data`"
-    psql -U postgres postgres -c "SELECT pg_database.datname,pg_size_pretty(pg_database_size(pg_database.datname)) AS size FROM pg_database ORDER BY datname;"
+    psql -U postgres postgres -c "SELECT datname,pg_size_pretty(pg_database_size(datname)) AS size FROM pg_database ORDER BY datname;"
+
+    echo "*** Refresh collation"
+    list_databases() {
+      psql -U postgres postgres -Atc "SELECT datname FROM pg_database WHERE datistemplate = false OR datname = 'template1';"
+    }
+
+    for db in $(list_databases); do
+      psql -U postgres "$db" -Atc "ALTER DATABASE \"$db\" REFRESH COLLATION VERSION;" 2>/dev/null ||:
+    done
 
     echo "*** Start tests"
     START=`date +%s`

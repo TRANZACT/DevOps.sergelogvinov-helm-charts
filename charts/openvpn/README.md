@@ -1,6 +1,6 @@
 # openvpn
 
-![Version: 0.5.1](https://img.shields.io/badge/Version-0.5.1-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 2.6.14](https://img.shields.io/badge/AppVersion-2.6.14-informational?style=flat-square)
+![Version: 0.6.9](https://img.shields.io/badge/Version-0.6.9-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 2.6.20](https://img.shields.io/badge/AppVersion-2.6.20-informational?style=flat-square)
 
 OpenVPN in kubernetes
 
@@ -120,8 +120,10 @@ vpn-%: ## create certificate for vpn
 | clusterDomain | string | `nil` | Kubernetes cluster domain. |
 | dns.enabled | bool | `false` | Create a DNS server in the pod. |
 | dns.forward | string | `"forward . tls://1.1.1.1 tls://1.0.0.1 {\n  tls_servername cloudflare-dns.com\n  policy sequential\n  health_check 30s\n  expire 60s\n}\n"` |  |
-| openvpn | object | `{"ca":null,"cert":null,"config":null,"defaultroutes":null,"dh":null,"hostName":"vpn.example.com","key":null,"otp":null,"redirectGateway":false,"revoke":null,"tlsauth":null,"tlsversion":{}}` | genkey secret ta.key |
+| openvpn | object | `{"ca":null,"cert":null,"config":null,"defaultroutes":null,"devmtu":1400,"devtype":"tun","dh":null,"hostName":"vpn.example.com","key":null,"otp":null,"redirectGateway":false,"revoke":null,"tlsauth":null,"tlsversion":{}}` | genkey secret ta.key |
 | openvpn.hostName | string | `"vpn.example.com"` | Server domain name. |
+| openvpn.devtype | string | `"tun"` | Device type, tun or tap Prefer to use tun interface. |
+| openvpn.devmtu | int | `1400` | Device MTU size |
 | openvpn.config | string | `nil` | OpenVPN configuration file. |
 | openvpn.redirectGateway | bool | `false` | Route all traffic through VPN. |
 | openvpn.defaultroutes | string | `nil` | Custom routes. |
@@ -136,7 +138,7 @@ vpn-%: ## create certificate for vpn
 | podAnnotations | object | `{}` | Annotations for pod. ref: https://kubernetes.io/docs/concepts/overview/working-with-objects/annotations/ |
 | podSecurityContext | object | `{"fsGroup":101,"fsGroupChangePolicy":"OnRootMismatch","runAsGroup":101,"runAsUser":0}` | Pod Security Context. ref: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/#set-the-security-context-for-a-pod |
 | securityContext | object | `{"capabilities":{"add":["NET_ADMIN","MKNOD","SETUID","SETGID"],"drop":["ALL"]},"runAsGroup":101,"seccompProfile":{"type":"RuntimeDefault"}}` | Container Security Context. ref: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/#set-the-security-context-for-a-pod |
-| service | object | `{"annotations":{},"ipFamilies":["IPv4"],"port":1190,"ports":[],"proto":"udp","type":"ClusterIP"}` | Service parameters ref: https://kubernetes.io/docs/user-guide/services/ |
+| service | object | `{"annotations":{},"image":{"pullPolicy":"IfNotPresent","repository":"ghcr.io/sergelogvinov/haproxy","tag":"3.3.10-alpine3.23"},"ipFamilies":["IPv4"],"port":1190,"ports":[],"proto":"udp","type":"ClusterIP"}` | Service parameters ref: https://kubernetes.io/docs/user-guide/services/ |
 | service.proto | string | `"udp"` | Protocol for service. Can be TCP, UDP or All. |
 | resources | object | `{"limits":{"cpu":1,"memory":"128Mi"},"requests":{"cpu":"100m","memory":"32Mi"}}` | Resource requests and limits. ref: https://kubernetes.io/docs/user-guide/compute-resources/ |
 | useDaemonSet | bool | `false` | Use a daemonset instead of a deployment |

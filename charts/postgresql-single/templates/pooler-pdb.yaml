@@ -1,0 +1,27 @@
+{{- if and .Values.podDisruptionBudget.create .Values.pooler.enabled }}
+{{- range $type := .Values.pooler.types }}
+{{ $name := ternary "pooler" (printf "pooler-%s" $type) (eq $type "rw") }}
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ include "postgresql-single.fullname" $ }}-{{ $name }}
+  labels:
+    {{- include "postgresql-single.labels" $ | nindent 4 }}
+    {{- with $.Values.podlabels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      {{- if eq $.Values.installationType "cnpg" }}
+      {{- include "postgresql-single.selectorLabels.cnpg" $ | nindent 6 }}
+      cnpg.io/podRole: pooler
+      cnpg.io/poolerName: {{ include "postgresql-single.fullname" $ }}-{{ $name }}
+      {{- else }}
+      {{- include "postgresql-single.selectorLabels" $ | nindent 6 }}
+      app.kubernetes.io/component: {{ $name }}
+      {{- end }}
+{{- end }}
+{{- end }}

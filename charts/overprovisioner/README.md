@@ -1,6 +1,6 @@
 # overprovisioner
 
-![Version: 0.2.0](https://img.shields.io/badge/Version-0.2.0-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 3.10](https://img.shields.io/badge/AppVersion-3.10-informational?style=flat-square)
+![Version: 0.2.2](https://img.shields.io/badge/Version-0.2.2-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 3.10.2](https://img.shields.io/badge/AppVersion-3.10.2-informational?style=flat-square)
 
 Reserve the resources for the migration
 
