@@ -1,0 +1,182 @@
+{{- if eq .Values.installationType "cnpg" }}
+{{- $cpu := include "resource-cpu" (default .Values.resources.requests.cpu (get (default (dict) .Values.resources.limits) "cpu")) }}
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: {{ include "postgresql-single.fullname" . }}
+  annotations:
+  {{- with .Values.podAnnotations }}
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  labels:
+    {{- include "postgresql-single.labels" . | nindent 4 }}
+    {{- with .Values.podlabels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+spec:
+  inheritedMetadata:
+    annotations:
+    {{- with .Values.podAnnotations }}
+      {{- toYaml . | nindent 6 }}
+    {{- end }}
+    {{- if .Values.metrics.enabled }}
+      prometheus.io/scrape: "true"
+      prometheus.io/port: "9187"
+    {{- end}}
+    labels:
+      {{- include "postgresql-single.selectorLabels" . | nindent 6 }}
+      {{- with .Values.podlabels }}
+      {{- toYaml . | nindent 6 }}
+      {{- end }}
+  enablePDB: {{ .Values.podDisruptionBudget.create }}
+  instances: {{ .Values.replicaCount }}
+  imageName: ghcr.io/cloudnative-pg/postgresql:{{ .Values.image.tag | default .Chart.AppVersion }}-standard-bookworm
+  {{- with .Values.imagePullSecrets }}
+  imagePullSecrets:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  {{- if .Values.priorityClassName }}
+  priorityClassName: {{ .Values.priorityClassName }}
+  {{- end }}
+  postgresGID: 26
+  postgresUID: 26
+  stopDelay: {{ .Values.terminationGracePeriodSeconds | default 1800 }}
+  primaryUpdateMethod: switchover
+  primaryUpdateStrategy: unsupervised
+  enableSuperuserAccess: true
+  superuserSecret:
+    name: {{ include "postgresql-single.fullname" . }}-superuser
+  {{- with .Values.env }}
+  env:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  postgresql:
+    shared_preload_libraries:
+      - pg_stat_statements
+    pg_hba:
+      - hostssl all         postgres              10.0.0.0/8    scram-sha-256
+      - hostssl replication postgres              10.0.0.0/8    scram-sha-256
+      - hostssl replication replication           10.0.0.0/8    scram-sha-256
+      - hostssl all         replication           10.0.0.0/8    scram-sha-256
+    {{- with .Values.pgHbaConfiguration }}
+      {{- toYaml . | nindent 6 }}
+    {{- end }}
+    parameters:
+      {{- mergeOverwrite (include "postgresql-single.postgresqlConfigurationCnpg" . | fromYaml) (include "postgresql-single.postgresqlConfigurationExtra" . | fromYaml) | toYaml | nindent 6 }}
+  seccompProfile:
+    type: RuntimeDefault
+  serviceAccountTemplate:
+    metadata:
+      name: {{ include "postgresql-single.serviceAccountName" . }}
+      {{- with .Values.serviceAccount.annotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+  resources:
+    {{- toYaml .Values.resources | nindent 4 }}
+  storage:
+    pvcTemplate:
+      accessModes:
+      {{- range .Values.persistence.accessModes }}
+        - {{ . | quote }}
+      {{- end }}
+      resources:
+        requests:
+          storage: {{ .Values.persistence.size | quote }}
+    {{- if (eq "-" .Values.persistence.storageClass) }}
+      storageClassName: ""
+    {{- else }}
+      storageClassName: "{{ .Values.persistence.storageClass }}"
+    {{- end }}
+  affinity:
+    podAntiAffinityType: {{ if eq .Values.podAntiAffinityPreset "hard" }}required{{ else }}preferred{{ end }}
+    topologyKey: {{ default "kubernetes.io/hostname" .Values.podAntiAffinityPresetKey }}
+    {{- with .Values.nodeSelector }}
+    nodeSelector:
+      {{- toYaml . | nindent 6 }}
+    {{- end }}
+    {{- with .Values.affinity }}
+    additionalPodAffinity:
+      {{- toYaml . | nindent 6 }}
+    {{- end }}
+    {{- with .Values.tolerations }}
+    tolerations:
+      {{- toYaml . | nindent 6 }}
+    {{- end }}
+  bootstrap:
+    {{- if .Values.backup.recovery }}
+    {{- if eq .Values.backup.recoveryMethod "basebackup" }}
+    pg_basebackup:
+      source: {{ include "postgresql-single.fullname" . }}-backup
+    {{- else }}
+    recovery:
+      owner: {{ .Values.initdb.username | quote }}
+      database: {{ default .Values.initdb.database .Values.postgresqlDatabase | quote }}
+      source: {{ include "postgresql-single.fullname" . }}-backup
+    {{- end }}
+    {{- else }}
+    initdb:
+      encoding: UTF8
+      localeCollate: en_US.UTF-8
+      localeCType: en_US.UTF-8
+      locale: en_US.UTF-8
+      dataChecksums: true
+      owner: {{ .Values.initdb.username | quote }}
+      database: {{ default .Values.initdb.database .Values.postgresqlDatabase | quote }}
+      {{- if .Values.metrics.enabled }}
+      postInitSQLRefs:
+        configMapRefs:
+          - name: {{ include "postgresql-single.fullname" . }}
+            key: metrics.sql
+      {{- end }}
+      {{- with .Values.initdb.script }}
+      postInitTemplateSQLRefs:
+        configMapRefs:
+          - name: {{ include "postgresql-single.fullname" $ }}
+            key: initdb.sql
+      {{- end }}
+    {{- end }}
+  backup:
+    target: "prefer-standby"
+  {{- if .Values.backup.enabled }}
+  plugins:
+    - name: cnpg-extensions.yandex.cloud
+      enabled: true
+      isWALArchiver: {{ .Values.backup.walpush | default false }}
+      parameters:
+        backupConfig: {{ include "postgresql-single.fullname" . }}
+  {{- end }}
+  {{- if .Values.backup.recovery }}
+  externalClusters:
+    - name: {{ include "postgresql-single.fullname" . }}-backup
+      plugin:
+        name: cnpg-extensions.yandex.cloud
+        parameters:
+          backupConfig: {{ default (include "postgresql-single.fullname" .) .Values.backup.walgSourceConfig }}
+      {{- if .Values.postgresqlConninfo }}
+      {{- $connection := include "postgresql-single.postgresqlConninfoDict" . | fromYaml }}
+      connectionParameters:
+        host: {{ $connection.host }}
+        user: {{ default .Values.postgresqlUsername $connection.user }}
+        dbname: {{ default "postgres" $connection.dbname }}
+        sslmode: {{ default "require" $connection.sslmode }}
+      password:
+        name: {{ include "postgresql-single.fullname" . }}-superuser
+        key: password
+      {{- end }}
+  {{- if .Values.postgresqlConninfo }}
+  replica:
+    enabled: true
+    source: {{ include "postgresql-single.fullname" . }}-backup
+  {{- end }}
+  {{- end }}
+  {{- if .Values.metrics.enabled }}
+  monitoring:
+    disableDefaultQueries: false
+    {{- if .Values.metrics.queries }}
+    customQueriesConfigMap:
+      - name: {{ include "postgresql-single.fullname" . }}
+        key: queries.yaml
+    {{- end }}
+  {{- end }}
+{{- end }}

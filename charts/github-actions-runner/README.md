@@ -1,6 +1,6 @@
 # github-actions-runner
 
-![Version: 2.6.1](https://img.shields.io/badge/Version-2.6.1-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 2.325.0](https://img.shields.io/badge/AppVersion-2.325.0-informational?style=flat-square)
+![Version: 2.19.1](https://img.shields.io/badge/Version-2.19.1-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 2.334.0](https://img.shields.io/badge/AppVersion-2.334.0-informational?style=flat-square)
 
 Github Actions with container registry and mirrors
 
@@ -85,21 +85,23 @@ nodeSelector:
 | imagePullSecrets | list | `[]` |  |
 | nameOverride | string | `""` |  |
 | fullnameOverride | string | `""` |  |
+| installationType | string | `"statefulset"` | Type of installation Can be: statefulset, crd |
 | autoscaling.enabled | bool | `false` |  |
 | autoscaling.minReplicas | int | `1` |  |
 | autoscaling.maxReplicas | int | `9` |  |
 | autoscaling.targetUtilizationPercentage | int | `90` |  |
 | autoscaling.scaleDown.stabilizationWindowSeconds | int | `600` |  |
 | autoscaling.scaleUp.stabilizationWindowSeconds | int | `30` |  |
+| runnerRepos | string | `""` |  |
 | runnerGroup | string | `"default"` |  |
 | runnerScaleSetName | string | `""` |  |
-| runnerVersion | string | `"0.11.0"` |  |
+| runnerVersion | string | `"0.14.2"` |  |
 | githubConfigUrl | string | `"https://github.com/..."` |  |
 | githubConfigSecret | object | `{}` |  |
 | controllerServiceAccount.name | string | `"arc"` |  |
 | controllerServiceAccount.namespace | string | `""` |  |
 | dind.enabled | bool | `true` |  |
-| dind.image | object | `{"pullPolicy":"IfNotPresent","repository":"docker","tag":"26.1-dind"}` | Docker in Docker image. ref: https://hub.docker.com/_/docker/tags?page=1&name=dind |
+| dind.image | object | `{"pullPolicy":"IfNotPresent","repository":"docker","tag":"29.0-dind"}` | Docker in Docker image. ref: https://hub.docker.com/_/docker/tags?page=1&name=dind |
 | dind.resources | object | `{"limits":{"cpu":1,"memory":"1Gi"},"requests":{"cpu":"500m","memory":"256Mi"}}` | Resource requests and limits. ref: https://kubernetes.io/docs/user-guide/compute-resources/ |
 | dind.extraVolumeMounts | list | `[]` | Additional container volume mounts. |
 | dind.extraVolumes | list | `[]` | Additional volumes. |
@@ -119,7 +121,7 @@ nodeSelector:
 | mirrors.enabled | bool | `true` |  |
 | mirrors.image.repository | string | `"ghcr.io/project-zot/zot"` |  |
 | mirrors.image.pullPolicy | string | `"IfNotPresent"` |  |
-| mirrors.image.tag | string | `"v2.1.4"` |  |
+| mirrors.image.tag | string | `"v2.1.17"` |  |
 | mirrors.registry | list | `[{"host":"docker.io","source":"https://registry-1.docker.io"},{"host":"gcr.io","source":"https://gcr.io"},{"host":"ghcr.io","source":"https://ghcr.io"},{"host":"registry.gitlab.com","source":"https://registry.gitlab.com"},{"host":"quay.io","source":"https://quay.io"},{"host":"mcr.microsoft.com","source":"https://mcr.microsoft.com"},{"host":"registry.k8s.io","source":"https://registry.k8s.io"}]` | Container registry list. ref: https://docs.docker.com/registry/recipes/mirror/ |
 | mirrors.resources | object | `{"limits":{"cpu":1,"memory":"2Gi"},"requests":{"cpu":"200m","memory":"512Mi"}}` | Resource requests and limits. ref: https://kubernetes.io/docs/user-guide/compute-resources/ |
 | mirrors.persistence | object | `{"accessModes":["ReadWriteOnce"],"annotations":{},"enabled":false,"size":"100Gi"}` | Persistence parameters for source code ref: https://kubernetes.io/docs/user-guide/persistent-volumes/ |
@@ -130,7 +132,7 @@ nodeSelector:
 | registry.enabled | bool | `false` |  |
 | registry.image.repository | string | `"ghcr.io/project-zot/zot"` |  |
 | registry.image.pullPolicy | string | `"IfNotPresent"` |  |
-| registry.image.tag | string | `"v2.1.4"` |  |
+| registry.image.tag | string | `"v2.1.17"` |  |
 | registry.storage | string | `nil` |  |
 | registry.ingress | object | `{"annotations":{"nginx.ingress.kubernetes.io/proxy-body-size":0},"auth":{},"className":"","enabled":false,"hosts":[],"tls":null}` | Registry ingress parameters ref: http://kubernetes.io/docs/user-guide/ingress/ |
 | registry.resources | object | `{"limits":{"cpu":1,"memory":"2Gi"},"requests":{"cpu":"100m","memory":"512Mi"}}` | Resource requests and limits. ref: https://kubernetes.io/docs/user-guide/compute-resources/ |

@@ -1,0 +1,8 @@
+{{- if eq .Values.installationType "cnpg" }}
+{{- if .Values.initContainers }}
+value: {{ required "initContainers are not implemented for CNPG installation type" .Values.initContainersError }}
+{{- end }}
+{{- if .Values.command }}
+value: {{ required "Command is not implemented for CNPG installation type" .Values.commandError }}
+{{- end }}
+{{- end }}

@@ -2,8 +2,8 @@
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
     "config:recommended",
+    "helpers:pinGitHubActionDigests",
     "docker:enableMajor",
-    ":timezone(Europe/Tallinn)",
     ":dependencyDashboard",
     ":disableRateLimiting",
     ":semanticCommits",
@@ -19,6 +19,10 @@
     "prEditedNotification",
     "prIgnoreNotification"
   ],
+  "github-actions": {
+    "enabled": true,
+    "pinDigests": true
+  },
   "separateMajorMinor": true,
   "separateMultipleMajor": true,
   "rebaseWhen": "behind-base-branch",
@@ -43,12 +47,13 @@
       "postUpgradeTasks": {
         "commands": [
           "./hack/bump-chart-version.sh '{{{parentDir}}}' '{{{isMajor}}}' '{{{isMinor}}}' '{{{isPatch}}}'",
-          "make docs-{{{parentDir}}}"
+          "make docs-{{{parentDir}}} COMMIT_MESSAGE='- update {{depName}} ({{currentVersion}} → {{newVersion}})'"
         ],
         "fileFilters": [
           "**/Chart.yaml",
           "**/values.yaml",
-          "**/README.md"
+          "**/README.md",
+          "**/CHANGELOG.md"
         ],
         "executionMode": "branch"
       }
@@ -106,6 +111,15 @@
         "ghcr.io/sergelogvinov/keydb"
       ],
       "allowedVersions": "<=6.3.3"
+    },
+    {
+      "matchDatasources": [
+        "docker"
+      ],
+      "matchPackageNames": [
+        "infisical/infisical"
+      ],
+      "allowedVersions": "/^v\\d+\\.\\d+\\.\\d+$/"
     }
   ],
   "helm-values": {

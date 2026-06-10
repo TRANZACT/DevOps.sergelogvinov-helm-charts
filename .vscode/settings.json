@@ -11,5 +11,15 @@
         "http://json.schemastore.org/chart.json": "Chart.yaml",
         "kubernetes": "templates/**"
     },
-    "git.rebaseWhenSync": true
+    "git.rebaseWhenSync": true,
+    "github.copilot.enable": {
+        "*": true,
+        "plaintext": true,
+        "markdown": true,
+        "scminput": false,
+        "jinja": false,
+        "dockerfile": false,
+        "yaml": false,
+        "ini": false
+    }
 }

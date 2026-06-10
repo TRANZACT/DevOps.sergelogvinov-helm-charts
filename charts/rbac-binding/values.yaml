@@ -1,0 +1,34 @@
+# Default values for rbac-binding.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+groups: {}
+  # group-name:
+  #   - name: oauthuser
+  #   - name: sa-account
+  #     namespace: default
+
+roleBindings: {}
+  # # Namespace name
+  # default:
+  #   # Group name
+  #   developers:
+  #     # Roles to bind
+  #     roles:
+  #       - name: cluster:admin
+  #         kind: ClusterRole
+  #     # Users
+  #     users:
+  #       - name: oauthuser
+  #       # Namespace says than it service account
+  #       - name: sa-account
+  #         namespace: default
+  #   cicd:
+  #     roles:
+  #       - name: cluster:cicd
+  #         kind: ClusterRole
+  #       - name: cluster:cicd:ro
+  #         kind: ClusterRole
+  #     users:
+  #       - name: sa-account
+  #         namespace: default

@@ -1,6 +1,6 @@
 # pgbouncer
 
-![Version: 0.9.0](https://img.shields.io/badge/Version-0.9.0-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 16.9](https://img.shields.io/badge/AppVersion-16.9-informational?style=flat-square)
+![Version: 0.16.0](https://img.shields.io/badge/Version-0.16.0-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 16.14](https://img.shields.io/badge/AppVersion-16.14-informational?style=flat-square)
 
 Postgres connection poller
 
@@ -85,8 +85,13 @@ metrics:
 | service.annotations | object | `{}` | Annotations for service |
 | service.ipFamilies | list | `["IPv4"]` | IP families for service possible values: IPv4, IPv6 ref: https://kubernetes.io/docs/concepts/services-networking/dual-stack/ |
 | service.trafficDistribution | string | `""` | The traffic distribution for the service. possible values: PreferClose ref: https://kubernetes.io/docs/concepts/services-networking/service/#traffic-distribution |
-| resources | object | `{"limits":{"memory":"128Mi"},"requests":{"cpu":"100m","memory":"64Mi"}}` | Resource requests and limits. ref: https://kubernetes.io/docs/user-guide/compute-resources/ |
-| autoscaling | object | `{"enabled":false,"maxReplicas":100,"minReplicas":1,"targetCPUUtilizationPercentage":80}` | Horizontal pod autoscaler. ref: https://kubernetes.io/docs/tasks/run-application/horizontal-pod-autoscale/ |
+| resources | object | `{"limits":{"memory":"128Mi"},"requests":{"cpu":"100m","memory":"64Mi"}}` | Resource requests and limits ref: https://kubernetes.io/docs/user-guide/compute-resources/ |
+| autoscaling | object | `{"controlledResources":["cpu","memory"],"controlledValues":"RequestsOnly","enabled":false,"maxAllowed":{},"minAllowed":{},"updatePolicy":{"updateMode":"InPlaceOrRecreate"}}` | Vertical pod autoscaler ref: https://kubernetes.io/docs/concepts/workloads/autoscaling/vertical-pod-autoscale/ |
+| autoscaling.controlledResources | list | `["cpu","memory"]` | Resource to control Possible values are "cpu" and "memory" |
+| autoscaling.controlledValues | string | `"RequestsOnly"` | Controls which resource value should be autoscaled Possible values are "RequestsAndLimits" and "RequestsOnly" |
+| autoscaling.maxAllowed | object | `{}` | Max allowed resources for the pod default is resources.limits |
+| autoscaling.minAllowed | object | `{}` | Min allowed resources for the pod default is resources.requests |
+| autoscaling.updatePolicy | object | `{"updateMode":"InPlaceOrRecreate"}` | Update policy Possible values are "Off", "Initial", "Recreate", "InPlaceOrRecreate" and "Auto" |
 | useDaemonSet | bool | `false` | Use a daemonset instead of a deployment |
 | terminationGracePeriodSeconds | int | `240` |  |
 | updateStrategy | object | `{"rollingUpdate":{"maxUnavailable":1},"type":"RollingUpdate"}` | pod deployment update strategy type. ref: https://kubernetes.io/docs/concepts/workloads/controllers/deployment/#updating-a-deployment |
@@ -97,7 +102,7 @@ metrics:
 | affinity | object | `{}` | Affinity for pod assignment. ref: https://kubernetes.io/docs/concepts/configuration/assign-pod-node/#affinity-and-anti-affinity |
 | metrics.enabled | bool | `false` |  |
 | metrics.image.repository | string | `"jbub/pgbouncer_exporter"` |  |
-| metrics.image.tag | string | `"v0.19.0"` |  |
+| metrics.image.tag | string | `"v0.20.0"` |  |
 | metrics.image.pullPolicy | string | `"IfNotPresent"` |  |
 | metrics.resources.limits.cpu | string | `"100m"` |  |
 | metrics.resources.limits.memory | string | `"32Mi"` |  |

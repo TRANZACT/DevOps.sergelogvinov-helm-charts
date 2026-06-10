@@ -5,7 +5,12 @@ metadata:
   labels:
     {{- include "victoria-metrics.labels" . | nindent 4 }}
 spec:
-  replicaCount: 1
+  {{- if eq (int .Values.vmAgent.replicaCount) 1 }}
+  replicaCount: {{ .Values.vmAgent.replicaCount }}
+  {{- else }}
+  shardCount: {{ .Values.vmAgent.replicaCount }}
+  statefulMode: true
+  {{- end }}
   revisionHistoryLimitCount: 2
 
   podMetadata:
@@ -22,7 +27,15 @@ spec:
   staticScrapeNamespaceSelector:
     matchLabels:
       kubernetes.io/metadata.name: {{ .Release.Namespace }}
-
+  staticScrapeSelector:
+    matchLabels:
+      app.kubernetes.io/name: {{ include "victoria-metrics.fullname" . }}
+  scrapeConfigNamespaceSelector:
+    matchLabels:
+      kubernetes.io/metadata.name: {{ .Release.Namespace }}
+  scrapeConfigSelector:
+    matchLabels:
+      app.kubernetes.io/name: {{ include "victoria-metrics.fullname" . }}
   scrapeInterval: 1m
   secrets:
     {{- toYaml .Values.vmAgent.secrets | nindent 4 }}
@@ -55,7 +68,7 @@ spec:
     {{- toYaml . | nindent 4 }}
   {{- end }}
   affinity:
-  {{- with .Values.affinity }}
+  {{- with default .Values.affinity .Values.vmAgent.affinity }}
     {{- toYaml . | nindent 4 }}
   {{- else }}
     podAffinity:

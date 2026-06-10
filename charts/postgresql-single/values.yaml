@@ -14,13 +14,16 @@ imagePullSecrets: []
 nameOverride: ""
 fullnameOverride: ""
 
+# -- Installation type
+# can be "cnpg" or "standalone"
+installationType: "standalone"
+
 # -- command Override default container command
-command:
-  []
+command: []
   # - /pause
 
-env:
-  []
+# -- Environment variables
+env: []
   # Database backup version on restore process
   # - name: WALG_BACKUP_VERSION
   #   value: base_000000010000062D0000005B
@@ -40,6 +43,9 @@ postgresqlUsername: postgres
 postgresqlMaxConnections: 150
 # postgresqlConfiguration:
 # postgresqlConfigurationExtra:
+#   log_min_duration_statement: 100ms
+#   log_statement: ddl
+#   track_io_timing: "on"
 # postgresqlConfigurationLogs:
 
 # -- PostgreSQL connection string
@@ -47,28 +53,26 @@ postgresqlMaxConnections: 150
 
 # -- Postgres auth
 # ref: https://www.postgresql.org/docs/current/auth-pg-hba-conf.html
-pgHbaConfiguration: |-
+pgHbaConfiguration: []
   # host  database    user                  address       auth-method
   #
-  local   all         all                                 trust
-  local   replication postgres                            trust
-  host    all         all                   localhost     md5
-  hostssl all         postgres              10.0.0.0/8    md5
-  hostssl postgres    postgres              10.0.0.0/8    md5
-  hostssl template1   postgres               0.0.0.0/0    md5
-  host    replication postgres              10.0.0.0/8    md5
-  hostssl replication postgres              10.0.0.0/8    md5
+  # - hostssl app       app                   10.0.0.0/8    md5
 
 initdb:
-  ## -- PostgreSQL initdb parameters
-  ## ref: https://www.postgresql.org/docs/current/app-initdb.html
+  # -- PostgreSQL initdb parameters
+  # ref: https://www.postgresql.org/docs/current/app-initdb.html
   args: "--data-checksums --auth-host=scram-sha-256"
 
-  ## -- PostgreSQL initdb scripts
-  ## ref: https://hub.docker.com/_/postgres
-  script: ""
-  #  #!/bin/sh
-  #  echo "Do something."
+  # -- Create owner and database
+  database: app
+  username: app
+  password: ~
+
+  # -- PostgreSQL initdb scripts
+  # ref: https://hub.docker.com/_/postgres
+  script: []
+  #
+  # - CREATE EXTENSION IF NOT EXISTS pg_stat_statements;
   #
 
 tlsCerts:
@@ -78,8 +82,98 @@ tlsCerts:
   ## ref: https://www.postgresql.org/docs/current/libpq-ssl.html
   mode: require
 
-initContainers:
-  []
+pooler:
+  enabled: false
+
+  replicaCount: 1
+
+  types: [rw, ro]
+  mode: session
+
+  parameters: {}
+
+  service:
+    # -- Service type
+    # ref: https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types
+    type: ClusterIP
+
+    # -- Extra labels for load balancer service.
+    # ref: https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/
+    labels: {}
+
+    # -- Extra annotations for load balancer service.
+    # ref: https://kubernetes.io/docs/concepts/overview/working-with-objects/annotations/
+    annotations: {}
+
+    # -- Traffic policies.
+    # ref: https://kubernetes.io/docs/reference/networking/virtual-ips/#traffic-policies
+    externalTrafficPolicy: Cluster
+    internalTrafficPolicy: Cluster
+
+    # -- IP families for service
+    # possible values: IPv4, IPv6
+    # ref: https://kubernetes.io/docs/concepts/services-networking/dual-stack/
+    ipFamilies: [IPv4]
+
+  # -- Vertical pod autoscaler
+  autoscaling:
+    enabled: false
+
+    # -- Resource to control
+    # Possible values are "cpu" and "memory"
+    controlledResources: ["cpu", "memory"]
+
+    # -- Controls which resource value should be autoscaled
+    # Possible values are "RequestsAndLimits" and "RequestsOnly"
+    controlledValues: RequestsOnly
+
+    # -- Max allowed resources for the pod
+    # default is resources.limits
+    maxAllowed: {}
+      # cpu: 1
+      # memory: 500Mi
+
+    # -- Min allowed resources for the pod
+    # default is resources.requests
+    minAllowed: {}
+      # cpu: 1
+      # memory: 500Mi
+
+    # -- Update policy
+    # Possible values are "Off", "Initial", "Recreate", "InPlaceOrRecreate" and "Auto"
+    updatePolicy:
+      updateMode: InPlaceOrRecreate
+
+  resources:
+    limits:
+      cpu: 500m
+      memory: 64Mi
+    requests:
+      cpu: 100m
+      memory: 32Mi
+
+  # -- Priority Class Name
+  # ref: https://kubernetes.io/docs/concepts/configuration/pod-priority-preemption/#priorityclass
+  priorityClassName: ~
+
+  # -- Pod Anti Affinity
+  # soft/hard
+  podAntiAffinityPreset: soft
+  podAntiAffinityPresetKey: kubernetes.io/hostname
+
+  # -- Node labels for pod assignment.
+  # ref: https://kubernetes.io/docs/user-guide/node-selection/
+  nodeSelector: {}
+
+  # -- Tolerations for pod assignment.
+  # ref: https://kubernetes.io/docs/concepts/configuration/taint-and-toleration/
+  tolerations: []
+
+  # -- Affinity for pod assignment.
+  # ref: https://kubernetes.io/docs/concepts/configuration/assign-pod-node/#affinity-and-anti-affinity
+  affinity: {}
+
+initContainers: []
   # - name: pg-init
   #   command: ['/copy_if_not_exist.sh']
   #   env:
@@ -106,8 +200,7 @@ podlabels: {}
 
 # -- Annotations for pod.
 # ref: https://kubernetes.io/docs/concepts/overview/working-with-objects/annotations/
-podAnnotations:
-  {}
+podAnnotations: {}
   # cluster-autoscaler.kubernetes.io/safe-to-evict: "false"
 
 # -- Pod Security Context.
@@ -135,6 +228,9 @@ service:
   type: ClusterIP
   port: 5432
 
+  # -- IP families for service
+  # possible values: IPv4, IPv6
+  # ref: https://kubernetes.io/docs/concepts/services-networking/dual-stack/
   ipFamilies: [IPv4]
 
 # -- Specifies the expected memory usage
@@ -143,6 +239,35 @@ postgresqlServerMemory: "128"
 # -- Specifies how often the WAL writer flushes WAL (wal_writer_delay)
 # ref: https://www.postgresql.org/docs/current/runtime-config-wal.html
 postgresqlServerWalWriterDelay: "200ms"
+
+# -- Vertical pod autoscaler
+autoscaling:
+  enabled: false
+
+  # -- Resource to control
+  # Possible values are "cpu" and "memory"
+  controlledResources: ["cpu", "memory"]
+
+  # -- Controls which resource value should be autoscaled
+  # Possible values are "RequestsAndLimits" and "RequestsOnly"
+  controlledValues: RequestsOnly
+
+  # -- Max allowed resources for the pod
+  # default is resources.limits
+  maxAllowed: {}
+    # cpu: 1
+    # memory: 500Mi
+
+  # -- Min allowed resources for the pod
+  # default is resources.requests
+  minAllowed: {}
+    # cpu: 1
+    # memory: 500Mi
+
+  # -- Update policy
+  # Possible values are "Off", "Initial", "Recreate", "InPlaceOrRecreate" and "Auto"
+  updatePolicy:
+    updateMode: InPlaceOrRecreate
 
 # -- Resource requests and limits.
 # ref: https://kubernetes.io/docs/user-guide/compute-resources/
@@ -178,38 +303,45 @@ persistence:
   size: 8Gi
   annotations: {}
 
-autoscaling:
-  enabled: false
-  minReplicas: 1
-  maxReplicas: 3
-  targetCPUUtilizationPercentage: 80
-  # targetMemoryUtilizationPercentage: 80
-
 # -- Priority Class Name
 # ref: https://kubernetes.io/docs/concepts/configuration/pod-priority-preemption/#priorityclass
 priorityClassName: ~
 
+# -- The time in seconds that is allowed for a PostgreSQL instance to gracefully shutdown
+# ref: https://kubernetes.io/docs/concepts/containers/container-lifecycle-hooks
 terminationGracePeriodSeconds: 120
 
-## updateStrategy for PostgreSQL StatefulSet and its slaves StatefulSets
+## -- Update strategy for PostgreSQL StatefulSet and its slaves StatefulSets
 ## ref: https://kubernetes.io/docs/concepts/workloads/controllers/statefulset/#update-strategies
 updateStrategy:
   type: RollingUpdate
 
 backup:
   enabled: false
+
+  ## -- Create cluster from backup
   recovery: false
+  ## -- Cluster recovery method
+  ## can be backup or basebackup
+  recoveryMethod: backup
 
   walpush: false
-  walg:
-    {}
+  walg: {}
     # WALG_TAR_DISABLE_FSYNC: true
-    # WALG_UPLOAD_WAL_METADATA: INDIVIDUAL
     # WALG_COMPRESSION_METHOD: brotli
+    # WALG_LIBSODIUM_KEY_TRANSFORM: hex
+    # WALG_LIBSODIUM_KEY: a1b2c3d4 # openssl rand -hex 32
+    # WALG_S3_PREFIX: s3://backup/postgres
+    # AWS_ACCESS_KEY_ID: aaaa
+    # AWS_SECRET_ACCESS_KEY: bbbb
+  walgSourceConfig: ~
+  walgSecrets: ~
 
   cleanPolicy: "retain FULL 3"
 
+  # -- Backup schedule.
   # set value "" to disable cron backup
+  # refs: https://kubernetes.io/docs/concepts/workloads/controllers/cron-jobs/
   schedule: "15 4 * * *"
 
   # -- Resource requests and limits.
@@ -217,7 +349,7 @@ backup:
   resources:
     limits:
       cpu: 2
-      memory: 1Gi
+      memory: 4Gi
     requests:
       cpu: 1500m
       memory: 768Mi
@@ -280,20 +412,20 @@ metrics:
   slowQueries: true
 
   queries: |-
+    {{- if eq .Values.installationType "standalone" }}
     pg_replication:
       query: SELECT CASE WHEN NOT pg_is_in_recovery() THEN 0 ELSE GREATEST (0, EXTRACT(EPOCH FROM (now() - pg_last_xact_replay_timestamp()))) END AS lag
-      master: true
       metrics:
         - lag:
             usage: "GAUGE"
             description: "Replication lag behind master in seconds"
     pg_postmaster:
       query: SELECT pg_postmaster_start_time as start_time_seconds from pg_postmaster_start_time()
-      master: true
       metrics:
         - start_time_seconds:
             usage: "GAUGE"
             description: "Time at which postmaster started"
+    {{- end }}
     {{- if and .Values.metrics.slowQueries (regexMatch "^[0-9]+\\.[0-9]+$" .Values.image.tag) (semverCompare ">=14.0" (default .Chart.AppVersion .Values.image.tag)) }}
     pg_stat_slow_queries:
       query: SELECT pg_get_userbyid(userid) as rolname,t3.datname,queryid,calls,max_exec_time / 1000 as max_time_seconds,REGEXP_REPLACE(substring(query,1,200),'["\n\s\t]+',' ','g') as sql FROM pg_stat_statements t1 JOIN pg_database t3 ON (t1.dbid=t3.oid) WHERE datname != 'postgres' AND rows != 0 AND max_exec_time > 1000 ORDER BY max_exec_time DESC LIMIT 10
@@ -421,6 +553,10 @@ metrics:
       cpu: 10m
       memory: 32Mi
 
+podDisruptionBudget:
+  create: true
+  minAvailable: 1
+
 # -- Node labels for pod assignment.
 # ref: https://kubernetes.io/docs/user-guide/node-selection/
 nodeSelector: {}
@@ -428,6 +564,11 @@ nodeSelector: {}
 # -- Tolerations for pod assignment.
 # ref: https://kubernetes.io/docs/concepts/configuration/taint-and-toleration/
 tolerations: []
+
+# -- Pod Anti Affinity
+# soft/hard
+podAntiAffinityPreset: hard
+podAntiAffinityPresetKey: kubernetes.io/hostname
 
 # -- Affinity for pod assignment.
 # ref: https://kubernetes.io/docs/concepts/configuration/assign-pod-node/#affinity-and-anti-affinity

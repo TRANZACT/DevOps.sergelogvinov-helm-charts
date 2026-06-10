@@ -1,4 +1,5 @@
 {{- if .Values.backup.enabled }}
+{{- if eq .Values.installationType "standalone" }}
 {{- $instance := include "postgresql-single.folover-number" . }}
 apiVersion: batch/v1
 kind: CronJob
@@ -18,6 +19,7 @@ spec:
   successfulJobsHistoryLimit: 1
   jobTemplate:
     spec:
+      ttlSecondsAfterFinished: 43200 # 12h
       activeDeadlineSeconds: 43200 # 12h
       backoffLimit: 0
       template:
@@ -27,7 +29,7 @@ spec:
             {{- with .Values.podlabels }}
             {{- toYaml . | nindent 12 }}
             {{- end }}
-            {{- include "postgresql-single.crontab.labels" . | nindent 12 }}
+            {{- include "postgresql-single.crontab.selectorLabels" . | nindent 12 }}
             app.kubernetes.io/component: backup
         spec:
           restartPolicy: Never
@@ -82,10 +84,10 @@ spec:
               {{- end }}
               resources:
                 {{- toYaml .Values.backup.resources | nindent 16 }}
-          {{- with .Values.nodeSelector }}
+          {{- if ne .Values.backup.podAffinityPreset "hard" }}{{- with .Values.nodeSelector }}
           nodeSelector:
             {{- toYaml . | nindent 12 }}
-          {{- end }}
+          {{- end }}{{- end }}
           affinity:
             podAffinity:
             {{- if eq .Values.backup.podAffinityPreset "hard" }}
@@ -141,4 +143,33 @@ spec:
               persistentVolumeClaim:
                 claimName: data-{{ include "postgresql-single.fullname" . }}-{{ $instance }}
           {{- end }}
+{{- end }}
+{{- if eq .Values.installationType "cnpg" }}
+apiVersion: postgresql.cnpg.io/v1
+kind: ScheduledBackup
+metadata:
+  name: {{ include "postgresql-single.fullname" . }}
+  labels:
+    {{- include "postgresql-single.labels" . | nindent 4 }}
+    {{- with .Values.podlabels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+spec:
+  immediate: false
+  suspend: {{ eq .Values.backup.schedule "" }}
+  {{- if eq (split " " .Values.backup.schedule | len) 5 }}
+  schedule: {{ printf "0 %s" .Values.backup.schedule | quote }}
+  {{- else }}
+  schedule: {{ default "15 4 * * *" .Values.backup.schedule | quote }}
+  {{- end }}
+  method: plugin
+  target: prefer-standby
+  backupOwnerReference: cluster
+  cluster:
+    name: {{ include "postgresql-single.fullname" . }}
+  pluginConfiguration:
+    name: cnpg-extensions.yandex.cloud
+    parameters:
+      backupConfig: {{ include "postgresql-single.fullname" . }}
+{{- end }}
 {{- end }}

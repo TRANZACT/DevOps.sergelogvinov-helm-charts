@@ -1,3 +1,4 @@
+{{- if eq .Values.installationType "standalone" }}
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
@@ -9,9 +10,7 @@ metadata:
     {{- end }}
 spec:
   serviceName: {{ include "postgresql-single.fullname" . }}-headless
-  {{- if not .Values.autoscaling.enabled }}
   replicas: {{ .Values.replicaCount }}
-  {{- end }}
   podManagementPolicy: Parallel
   {{- if semverCompare ">=1.29" .Capabilities.KubeVersion.GitVersion }}
   persistentVolumeClaimRetentionPolicy:
@@ -74,10 +73,8 @@ spec:
             - postgres
             - -c
             - config_file=/postgresql/conf/postgresql.conf
-          {{- if .Values.pgHbaConfiguration }}
             - -c
             - hba_file=/postgresql/conf/pg_hba.conf
-          {{- end }}
           env:
             - name: POSTGRES_INITDB_ARGS
               value: {{ .Values.initdb.args | quote }}
@@ -92,8 +89,6 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.name
-            - name: PGUSER
-              value: {{ .Values.postgresqlUsername | quote }}
             - name: PGSSLMODE
               value: {{ .Values.tlsCerts.mode | quote }}
             {{- if hasPrefix "verify" .Values.tlsCerts.mode }}
@@ -176,13 +171,7 @@ spec:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       affinity:
-        podAntiAffinity:
-          requiredDuringSchedulingIgnoredDuringExecution:
-            - labelSelector:
-                matchLabels: {{- (include "postgresql-single.selectorLabels" .) | nindent 18 }}
-              namespaces:
-                - {{ .Release.Namespace | quote }}
-              topologyKey: kubernetes.io/hostname
+        podAntiAffinity: {{- include "affinities.pods" . | nindent 10 }}
       {{- with .Values.affinity }}
         {{- toYaml . | nindent 8 }}
       {{- end }}
@@ -270,4 +259,5 @@ spec:
         storageClassName: "{{ .Values.persistence.storageClass }}"
       {{- end }}
       {{- end }}
+{{- end }}
 {{- end }}

@@ -12,6 +12,10 @@ imagePullSecrets: []
 nameOverride: ""
 fullnameOverride: ""
 
+# -- Type of installation
+# Can be: statefulset, crd
+installationType: "statefulset"
+
 autoscaling:
   enabled: false
   minReplicas: 1
@@ -22,10 +26,11 @@ autoscaling:
   scaleUp:
     stabilizationWindowSeconds: 30
 
+runnerRepos: ""
 runnerGroup: "default"
 runnerScaleSetName: ""
 # renovate: datasource=docker depName=ghcr.io/actions/gha-runner-scale-set-controller
-runnerVersion: "0.11.0"
+runnerVersion: "0.14.2"
 
 githubConfigUrl: "https://github.com/..."
 githubConfigSecret:
@@ -47,7 +52,7 @@ dind:
   image:
     repository: docker
     pullPolicy: IfNotPresent
-    tag: 26.1-dind
+    tag: 29.0-dind
 
   # -- Resource requests and limits.
   # ref: https://kubernetes.io/docs/user-guide/compute-resources/
@@ -132,7 +137,7 @@ mirrors:
   image:
     repository: ghcr.io/project-zot/zot
     pullPolicy: IfNotPresent
-    tag: "v2.1.4"
+    tag: "v2.1.17"
 
   # -- Container registry list.
   # ref: https://docs.docker.com/registry/recipes/mirror/
@@ -210,7 +215,7 @@ registry:
   image:
     repository: ghcr.io/project-zot/zot
     pullPolicy: IfNotPresent
-    tag: "v2.1.4"
+    tag: "v2.1.17"
 
   storage:
     ~
