@@ -510,6 +510,30 @@ entries:
   clickhouse:
   - apiVersion: v2
     appVersion: 26.3.10
+    created: "2026-06-18T15:26:41.084052226Z"
+    description: Clickhouse chart for Kubernetes
+    digest: d5571456c1fbf297019feef0bb1ed9b03d3fe3af6cabcb0358057666401a63f4
+    home: https://github.com/sergelogvinov/helm-charts
+    icon: https://github.com/ClickHouse/clickhouse-docs/raw/84f38d893eb7e561c7296279d7953b6a508ec413/static/img/clickhouse-logo.svg
+    keywords:
+    - database
+    - clickhouse
+    - clickhouse-backup
+    - altinity
+    maintainers:
+    - name: sergelogvinov
+      url: https://github.com/sergelogvinov
+    name: clickhouse
+    sources:
+    - https://github.com/sergelogvinov/helm-charts/tree/master/charts/clickhouse
+    - https://github.com/ClickHouse/ClickHouse
+    - https://hub.docker.com/r/clickhouse/clickhouse-server
+    type: application
+    urls:
+    - https://github.com/TRANZACT/DevOps.sergelogvinov-helm-charts/releases/download/clickhouse-0.21.0/clickhouse-0.21.0.tgz
+    version: 0.21.0
+  - apiVersion: v2
+    appVersion: 26.3.10
     created: "2026-06-08T21:48:29.191706593Z"
     description: Clickhouse chart for Kubernetes
     digest: a8d444c8db07eeb88b2390070cd7528863ee06934fa74db26825afdec0c65dfb
@@ -2780,6 +2804,28 @@ entries:
     version: 1.0.0
   infisical:
   - apiVersion: v2
+    appVersion: v0.161.0
+    created: "2026-06-18T15:26:41.329364928Z"
+    description: nfisical is the open-source platform for secrets, certificates, and
+      privileged access management.
+    digest: bc67fb3262d61b106dcfc3bc225d2d49b724ea24c1218da3ab5924db735acf88
+    home: https://github.com/sergelogvinov/helm-charts
+    icon: https://raw.githubusercontent.com/sergelogvinov/helm-charts/main/charts/infisical/icon.png
+    keywords:
+    - infisical
+    - secrets
+    maintainers:
+    - name: sergelogvinov
+      url: https://github.com/sergelogvinov
+    name: infisical
+    sources:
+    - https://github.com/sergelogvinov/helm-charts/tree/master/charts/infisical
+    - https://github.com/Infisical/infisical
+    type: application
+    urls:
+    - https://github.com/TRANZACT/DevOps.sergelogvinov-helm-charts/releases/download/infisical-0.3.0/infisical-0.3.0.tgz
+    version: 0.3.0
+  - apiVersion: v2
     appVersion: v0.160.11
     created: "2026-06-08T21:48:29.957129683Z"
     description: nfisical is the open-source platform for secrets, certificates, and
@@ -4680,6 +4726,27 @@ entries:
     version: 0.1.0
   openvpn:
   - apiVersion: v2
+    appVersion: 2.7.3
+    created: "2026-06-18T15:26:41.571152705Z"
+    description: OpenVPN in kubernetes
+    digest: c1f8d987a84640d6145b0c034a8cddc0c857b35ba8b5617f9dcbc43032a3c783
+    home: https://github.com/sergelogvinov/helm-charts
+    icon: https://raw.githubusercontent.com/sergelogvinov/helm-charts/main/charts/openvpn/icon.png
+    keywords:
+    - openvpn
+    - vpn
+    maintainers:
+    - name: sergelogvinov
+      url: https://github.com/sergelogvinov
+    name: openvpn
+    sources:
+    - https://github.com/sergelogvinov/helm-charts/tree/master/charts/openvpn
+    - https://openvpn.net
+    type: application
+    urls:
+    - https://github.com/TRANZACT/DevOps.sergelogvinov-helm-charts/releases/download/openvpn-0.7.0/openvpn-0.7.0.tgz
+    version: 0.7.0
+  - apiVersion: v2
     appVersion: 2.6.20
     created: "2026-06-08T21:48:31.01900996Z"
     description: OpenVPN in kubernetes
@@ -5715,6 +5782,30 @@ entries:
   postgresql-single:
   - apiVersion: v2
     appVersion: "16.14"
+    created: "2026-06-18T15:26:41.820629937Z"
+    description: Postgres with backup/restore and replication
+    digest: 213d04197ac534feba087d9a1da2e8d59591acb0fd9c88ab035674fee3f2a569
+    home: https://github.com/sergelogvinov/helm-charts
+    icon: https://raw.githubusercontent.com/sergelogvinov/helm-charts/main/charts/postgresql-single/icon.png
+    keywords:
+    - postgresql
+    - postgres
+    - cloudnative-pg
+    - database
+    - sql
+    - replication
+    maintainers:
+    - name: sergelogvinov
+      url: https://github.com/sergelogvinov
+    name: postgresql-single
+    sources:
+    - https://github.com/sergelogvinov/helm-charts/tree/main/charts/postgresql-single
+    type: application
+    urls:
+    - https://github.com/TRANZACT/DevOps.sergelogvinov-helm-charts/releases/download/postgresql-single-1.14.6/postgresql-single-1.14.6.tgz
+    version: 1.14.6
+  - apiVersion: v2
+    appVersion: "16.14"
     created: "2026-06-08T21:48:31.885895216Z"
     description: Postgres with backup/restore and replication
     digest: a064db0085c03d786bc76d2ffb31cc595cf397fbe0bacfc41d36e89dd6c94275
@@ -6642,6 +6733,27 @@ entries:
     - https://github.com/sergelogvinov/helm-charts/releases/download/postgresql-single-0.3.6/postgresql-single-0.3.6.tgz
     version: 0.3.6
   prometheus-rules:
+  - apiVersion: v2
+    appVersion: 2.40.0
+    created: "2026-06-18T15:26:42.040103048Z"
+    description: Static prometheus/victoria metrics common rules
+    digest: a2b6133445d2a02785c6fc9f6b29bf640d53f05581f0b8fb6f66fcdb30fbf8ea
+    home: https://github.com/sergelogvinov/helm-charts
+    icon: https://raw.githubusercontent.com/prometheus/prometheus.github.io/master/assets/prometheus_logo-cb55bb5c346.png
+    keywords:
+    - prometheus
+    - victoria-metrics
+    - metrics
+    maintainers:
+    - name: sergelogvinov
+      url: https://github.com/sergelogvinov
+    name: prometheus-rules
+    sources:
+    - https://github.com/sergelogvinov/helm-charts/tree/main/charts/prometheus-rules
+    type: application
+    urls:
+    - https://github.com/TRANZACT/DevOps.sergelogvinov-helm-charts/releases/download/prometheus-rules-0.3.10/prometheus-rules-0.3.10.tgz
+    version: 0.3.10
   - apiVersion: v2
     appVersion: 2.40.0
     created: "2026-06-08T21:48:32.159686058Z"
@@ -8023,6 +8135,26 @@ entries:
     version: 0.1.0
   skipper:
   - apiVersion: v2
+    appVersion: v0.27.1
+    created: "2026-06-18T15:26:42.291123907Z"
+    description: Ingress controller for Kubernetes
+    digest: 7061c918e7c546317f410640bc8a48be86385c82772080462274220c876318e4
+    home: https://github.com/sergelogvinov/helm-charts
+    icon: https://raw.githubusercontent.com/sergelogvinov/helm-charts/main/charts/skipper/icon.png
+    keywords:
+    - ingress-controller
+    - skipper
+    maintainers:
+    - name: sergelogvinov
+      url: https://github.com/sergelogvinov
+    name: skipper
+    sources:
+    - https://github.com/sergelogvinov/helm-charts/tree/main/charts/skipper
+    type: application
+    urls:
+    - https://github.com/TRANZACT/DevOps.sergelogvinov-helm-charts/releases/download/skipper-0.8.0/skipper-0.8.0.tgz
+    version: 0.8.0
+  - apiVersion: v2
     appVersion: v0.26.23
     created: "2026-06-08T21:48:33.411739468Z"
     description: Ingress controller for Kubernetes
@@ -9367,4 +9499,4 @@ entries:
     urls:
     - https://github.com/TRANZACT/DevOps.sergelogvinov-helm-charts/releases/download/victoria-metrics-storage-0.0.8/victoria-metrics-storage-0.0.8.tgz
     version: 0.0.8
-generated: "2026-06-08T21:48:35.12624591Z"
+generated: "2026-06-18T15:26:42.292534346Z"
