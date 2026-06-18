@@ -1,6 +1,6 @@
 # clickhouse
 
-![Version: 0.19.0](https://img.shields.io/badge/Version-0.19.0-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 26.3.10](https://img.shields.io/badge/AppVersion-26.3.10-informational?style=flat-square)
+![Version: 0.21.0](https://img.shields.io/badge/Version-0.21.0-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 26.3.10](https://img.shields.io/badge/AppVersion-26.3.10-informational?style=flat-square)
 
 Clickhouse chart for Kubernetes
 
@@ -104,7 +104,7 @@ metrics:
 | podlabels | object | `{}` | Extra labels for pod. ref: https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/ |
 | podAnnotations | object | `{}` | Annotations for pod. ref: https://kubernetes.io/docs/concepts/overview/working-with-objects/annotations/ |
 | podSecurityContext | object | `{"fsGroup":101,"fsGroupChangePolicy":"OnRootMismatch","runAsGroup":101,"runAsNonRoot":true,"runAsUser":101}` | Pod Security Context. ref: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/#set-the-security-context-for-a-pod |
-| securityContext | object | `{"allowPrivilegeEscalation":false,"capabilities":{"drop":["ALL"]},"seccompProfile":{"type":"RuntimeDefault"}}` | Container Security Context. ref: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/#set-the-security-context-for-a-pod |
+| securityContext | object | `{"allowPrivilegeEscalation":false,"capabilities":{"add":[],"drop":["ALL"]},"readOnlyRootFilesystem":false,"seccompProfile":{"type":"RuntimeDefault"}}` | Container Security Context. ref: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/#set-the-security-context-for-a-pod |
 | service | object | `{"ipFamilies":["IPv4"],"type":"ClusterIP"}` | Service parameters ref: https://kubernetes.io/docs/user-guide/services/ |
 | ingress | object | `{"annotations":{},"className":"","enabled":false,"hosts":[{"host":"chart-example.local","paths":["/clickhouse"]}],"tls":[]}` | Clickhouse ingress parameters ref: http://kubernetes.io/docs/user-guide/ingress/ |
 | autoscaling | object | `{"controlledResources":["cpu","memory"],"controlledValues":"RequestsOnly","enabled":false,"maxAllowed":{},"minAllowed":{},"updatePolicy":{"updateMode":"InPlaceOrRecreate"}}` | Vertical pod autoscaler |
@@ -143,7 +143,7 @@ metrics:
 | backup.enabled | bool | `false` |  |
 | backup.image.repository | string | `"altinity/clickhouse-backup"` |  |
 | backup.image.pullPolicy | string | `"IfNotPresent"` |  |
-| backup.image.tag | string | `"2.7.1"` |  |
+| backup.image.tag | string | `"2.7.2"` |  |
 | backup.schedule | string | `"15 4 * * *"` |  |
 | backup.args | list | `[]` |  |
 | backup.envs | object | `{}` |  |
@@ -172,4 +172,5 @@ metrics:
 | clickhouse.envs | object | `{}` |  |
 | clickhouse.envValueFrom | object | `{}` | Clickhouse environment variable references that will be added |
 | clickhouse.customConfig | object | `{}` |  |
+| clickhouse.customUsersConfig | object | `{}` | Clickhouse custom user-level config files mounted into `/etc/clickhouse-server/users.d/`. Use this for settings that belong to a profile/user (e.g. `async_insert_busy_timeout_ms`, `max_memory_usage`), which `customConfig` (mounted into `config.d/`) cannot override. Each key becomes a file in `users.d/`. Keys must not collide with `customConfig` keys. |
 | clickhouse.initDB | object | `{}` | Clickhouse initdb scripts |
