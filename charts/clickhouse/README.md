@@ -1,6 +1,6 @@
 # clickhouse
 
-![Version: 0.21.0](https://img.shields.io/badge/Version-0.21.0-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 26.3.10](https://img.shields.io/badge/AppVersion-26.3.10-informational?style=flat-square)
+![Version: 0.21.6](https://img.shields.io/badge/Version-0.21.6-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 26.3.10](https://img.shields.io/badge/AppVersion-26.3.10-informational?style=flat-square)
 
 Clickhouse chart for Kubernetes
 
@@ -119,7 +119,7 @@ metrics:
 | extraInitContainers | object | `{}` | Additional init containers. |
 | extraContainers | object | `{}` | Additional containers. |
 | persistence | object | `{"accessModes":["ReadWriteOnce"],"annotations":{},"enabled":true,"size":"64Gi"}` | Persistence parameters ref: https://kubernetes.io/docs/user-guide/persistent-volumes/ |
-| priorityClassName | string | `nil` | Priority Class Name ref: https://kubernetes.io/docs/concepts/configuration/pod-priority-preemption/#priorityclass |
+| priorityClassName | string | `""` | Priority Class Name ref: https://kubernetes.io/docs/concepts/configuration/pod-priority-preemption/#priorityclass |
 | updateStrategy | object | `{"type":"RollingUpdate"}` | pod deployment update strategy type. ref: https://kubernetes.io/docs/concepts/workloads/controllers/deployment/#updating-a-deployment |
 | nodeSelector | object | `{}` | Node labels for pod assignment. ref: https://kubernetes.io/docs/user-guide/node-selection/ |
 | tolerations | list | `[]` | Tolerations for pod assignment. ref: https://kubernetes.io/docs/concepts/configuration/taint-and-toleration/ |
@@ -128,7 +128,7 @@ metrics:
 | clickhouseKeeper.replicaCount | int | `3` |  |
 | clickhouseKeeper.image.repository | string | `"clickhouse/clickhouse-keeper"` |  |
 | clickhouseKeeper.image.pullPolicy | string | `"IfNotPresent"` |  |
-| clickhouseKeeper.image.tag | string | `"26.5.1-alpine"` |  |
+| clickhouseKeeper.image.tag | string | `"26.5.5-alpine"` |  |
 | clickhouseKeeper.resources.limits.cpu | string | `"500m"` |  |
 | clickhouseKeeper.resources.limits.memory | string | `"512Mi"` |  |
 | clickhouseKeeper.resources.requests.cpu | string | `"100m"` |  |
@@ -143,7 +143,7 @@ metrics:
 | backup.enabled | bool | `false` |  |
 | backup.image.repository | string | `"altinity/clickhouse-backup"` |  |
 | backup.image.pullPolicy | string | `"IfNotPresent"` |  |
-| backup.image.tag | string | `"2.7.2"` |  |
+| backup.image.tag | string | `"2.7.4"` |  |
 | backup.schedule | string | `"15 4 * * *"` |  |
 | backup.args | list | `[]` |  |
 | backup.envs | object | `{}` |  |

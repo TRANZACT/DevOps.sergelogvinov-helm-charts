@@ -17,15 +17,16 @@ data:
         "rootDirectory": "/var/lib/registry",
         "commit": true,
         "gc": false,
-        "gcDelay": "24h",
-        "gcInterval": "24h"
+        "gcDelay": "0",
+        "gcInterval": "0"
       },
       "http": {
         "address": "0.0.0.0", "port": "8443",
         "tls": {
           "cert":"/etc/registry-tls/tls.crt",
           "key":"/etc/registry-tls/tls.key"
-        }
+        },
+        "compat": ["docker2s2"]
       },
       "log": { "level": "warn" },
       "extensions": {
@@ -44,9 +45,10 @@ data:
               "urls": ["https://{{ $val.host }}"],
               "tlsVerify": true,
               "onDemand": true,
-              "maxRetries": 3,
-              "retryDelay": "15s",
+              "maxRetries": 2,
+              "retryDelay": "5s",
               "onlySigned": false,
+              "syncTimeout": "1m",
               "content": [
                 {
                   "prefix": "**",
@@ -60,8 +62,10 @@ data:
               "tlsVerify": true,
               "onDemand": true,
               "maxRetries": 3,
-              "retryDelay": "15s",
+              "retryDelay": "5s",
+              "preserveDigest": true,
               "onlySigned": false,
+              "syncTimeout": "5m",
               "content": [
                 {
                   "prefix": "library/**",
@@ -89,36 +93,6 @@ data:
         }
       }
     }
-
-  registry.yaml: |-
-    version: 0.1
-    log:
-      accesslog:
-        disabled: true
-      level: warn
-      formatter: json
-    storage:
-      {{- if .Values.registry.storage }}
-      {{- .Values.registry.storage | toYaml | nindent 6 }}
-      {{- else }}
-      maintenance:
-        uploadpurging:
-          enabled: true
-          age: 72h
-          interval: 4h
-          dryrun: false
-      filesystem:
-        rootdirectory: /var/lib/registry
-        maxthreads: 100
-      delete:
-        enabled: true
-      {{- end }}
-    http:
-      addr: :8443
-      # host: https://{{ include "github-actions-runner.fullname" . }}-registry.{{ .Release.Namespace }}.svc
-      tls:
-        certificate: /etc/registry-tls/tls.crt
-        key: /etc/registry-tls/tls.key
 
   registry.json: |-
     {
@@ -190,11 +164,16 @@ data:
       uid = 0
       gid = 0
 
+    [history]
+      maxAge = 0
+      maxEntries = 0
+
     [worker.containerd]
       enabled = false
 
     [worker.oci]
       enabled = true
+      max-parallelism = 8
       gc = true
       gckeepstorage = "{{ int64 (divf $size 2) }}MB"
     [[worker.oci.gcpolicy]]

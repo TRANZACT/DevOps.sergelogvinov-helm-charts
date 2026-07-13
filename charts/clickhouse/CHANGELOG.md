@@ -1,1 +1,1 @@
-- feat: add values.schema
+- update clickhouse/clickhouse-keeper (26.5.3 → 26.5.5)
